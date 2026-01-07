@@ -1,0 +1,333 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased transition-colors duration-300;
+  }
+
+  /* Modern Dark Mode - Deep Royal Green Theme */
+  .dark body {
+    @apply bg-dark-bg text-dark-text;
+    /* Deepest Royal Green */
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-royal-300/80 rounded-full hover:bg-royal-400;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-royal-800/50 hover:bg-royal-700;
+  }
+}
+
+@layer components {
+
+  /* Cards */
+  .card {
+    @apply bg-white border border-slate-200/60 rounded-2xl shadow-sm transition-all duration-300;
+  }
+
+  .dark .card {
+    @apply bg-dark-surface border-dark-border shadow-none;
+    /* Dark Surface */
+  }
+
+  .card-hover {
+    @apply hover:shadow-lg hover:border-royal-200 dark:hover:border-royal-700/50 hover:-translate-y-1;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-gradient-to-r from-royal-700 to-royal-600 text-white shadow-lg shadow-royal-900/20 hover:shadow-royal-900/30 hover:-translate-y-0.5 transition-all active:scale-95 border border-royal-600/50;
+  }
+
+  .btn-gold {
+    @apply bg-gradient-to-r from-gold-500 to-gold-400 text-royal-950 font-semibold shadow-lg shadow-gold-500/20 hover:shadow-gold-500/30 hover:-translate-y-0.5 transition-all active:scale-95 border border-gold-400/50;
+  }
+
+  .btn-emerald {
+    @apply bg-gradient-to-r from-royal-500 to-royal-400 text-white shadow-lg shadow-royal-500/25 hover:shadow-royal-500/40 hover:-translate-y-0.5 transition-all active:scale-95;
+  }
+
+  /* Inputs */
+  .input-field {
+    @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-royal-500/25 focus:border-royal-500 transition-all font-medium text-slate-700 placeholder:text-slate-400;
+  }
+
+  .dark .input-field {
+    @apply bg-dark-surface border-dark-border text-white placeholder:text-dark-muted focus:border-royal-500 focus:ring-royal-500/20;
+  }
+}
+
+@layer utilities {
+  .text-gradient-royal {
+    @apply bg-gradient-to-r from-royal-800 to-royal-600 bg-clip-text text-transparent;
+  }
+
+  .dark .text-gradient-royal {
+    @apply bg-gradient-to-r from-royal-400 via-gold-300 to-royal-200 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-gold-600 to-gold-400 bg-clip-text text-transparent;
+  }
+
+  .dark .text-gradient-gold {
+    @apply bg-gradient-to-r from-gold-300 to-gold-100 bg-clip-text text-transparent;
+  }
+
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+
+  .dark .glass-panel {
+    @apply bg-dark-surface/80 border-white/5;
+  }
+
+  /* Skeleton Loading Animation */
+  .skeleton {
+    @apply bg-slate-200 dark:bg-dark-border rounded animate-pulse;
+  }
+
+  /* Shimmer effect for loading states */
+  .shimmer {
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .dark .shimmer {
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%);
+    background-size: 200% 100%;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Success celebration animation */
+  .celebrate {
+    animation: celebrate 0.6s ease-out;
+  }
+
+  @keyframes celebrate {
+
+    0%,
+    100% {
+      transform: scale(1);
+    }
+
+    25% {
+      transform: scale(1.1);
+    }
+
+    50% {
+      transform: scale(0.95);
+    }
+
+    75% {
+      transform: scale(1.05);
+    }
+  }
+
+  /* Glow effect for achievements */
+  .glow-gold {
+    box-shadow: 0 0 20px rgba(255, 191, 26, 0.4);
+  }
+
+  .dark .glow-gold {
+    box-shadow: 0 0 20px rgba(255, 191, 26, 0.2);
+  }
+
+  /* Animation for dialog scale in */
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Animation for toast slide in from right */
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Animation for elements sliding up */
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Fade in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* React Quill Editor Styles */
+.notepad-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.notepad-editor .quill {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.notepad-editor .ql-container {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 1.125rem;
+  font-family: inherit;
+}
+
+.notepad-editor .ql-editor {
+  padding: 2rem;
+  line-height: 1.8;
+  min-height: 100%;
+}
+
+.notepad-editor .ql-editor.ql-blank::before {
+  font-style: normal;
+  color: #94a3b8;
+}
+
+.notepad-editor .ql-toolbar {
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: #f8fafc;
+  padding: 0.75rem 1rem !important;
+}
+
+.notepad-editor .ql-container {
+  border: none !important;
+}
+
+/* Dark Mode Quill Styles */
+.dark .notepad-editor .ql-toolbar {
+  background: rgba(15, 23, 42, 0.5);
+  border-bottom-color: rgba(51, 65, 85, 0.5) !important;
+}
+
+.dark .notepad-editor .ql-toolbar .ql-stroke {
+  stroke: #94a3b8;
+}
+
+.dark .notepad-editor .ql-toolbar .ql-fill {
+  fill: #94a3b8;
+}
+
+.dark .notepad-editor .ql-toolbar .ql-picker {
+  color: #94a3b8;
+}
+
+.dark .notepad-editor .ql-toolbar button:hover .ql-stroke,
+.dark .notepad-editor .ql-toolbar .ql-picker-label:hover .ql-stroke {
+  stroke: #818cf8;
+}
+
+.dark .notepad-editor .ql-toolbar button:hover .ql-fill,
+.dark .notepad-editor .ql-toolbar .ql-picker-label:hover .ql-fill {
+  fill: #818cf8;
+}
+
+.dark .notepad-editor .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #a5b4fc;
+}
+
+.dark .notepad-editor .ql-toolbar button.ql-active .ql-fill {
+  fill: #a5b4fc;
+}
+
+.dark .notepad-editor .ql-editor {
+  color: #e2e8f0;
+}
+
+.dark .notepad-editor .ql-editor.ql-blank::before {
+  color: #64748b;
+}
+
+.dark .notepad-editor .ql-picker-options {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark .notepad-editor .ql-picker-item {
+  color: #94a3b8;
+}
+
+.dark .notepad-editor .ql-picker-item:hover {
+  color: #818cf8;
+}
