@@ -22,11 +22,11 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
         ? Math.min(100, Math.round((goals.currentScore / goals.targetScore) * 100))
         : 0;
 
-    const getUrgencyColor = (days) => {
-        if (days === null) return 'text-slate-400';
-        if (days <= 10) return 'text-red-500';
-        if (days <= 30) return 'text-yellow-500';
-        return 'text-emerald-500';
+    const getUrgencyText = (days) => {
+        if (days === null) return 'text-[#71717A]';
+        if (days <= 10) return 'font-bold';
+        if (days <= 30) return 'font-bold';
+        return 'font-bold';
     };
 
     const handleSaveGoals = async () => {
@@ -40,90 +40,90 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card p-6 bg-gradient-to-r from-royal-50 to-gold-50 dark:from-royal-950/50 dark:to-gold-950/30 border-royal-200 dark:border-royal-800"
+                className="card p-6 bg-[#FAFAFA] dark:bg-dark-surface border-black/10 dark:border-dark-border"
             >
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-royal-500 to-gold-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <Target className="w-6 h-6 text-white" />
+                        <div className="w-12 h-12 bg-black dark:bg-white rounded flex items-center justify-center">
+                            <Target className="w-6 h-6 text-white dark:text-black" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">UPSC Goal Tracker</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Stay focused on your target</p>
+                            <h2 className="text-lg font-medium">UPSC Goal <span className="font-bold">Tracker</span></h2>
+                            <p className="text-sm text-[#71717A] font-light">Stay focused on your target</p>
                         </div>
                     </div>
                     <button
                         onClick={() => setShowSettings(true)}
-                        className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-lg transition-colors"
+                        className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors border border-black/10 dark:border-white/10"
                         title="Edit Goals"
                     >
-                        <Settings className="w-5 h-5 text-slate-500" />
+                        <Settings className="w-5 h-5 text-[#71717A]" />
                     </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                     {/* Exam Countdown */}
-                    <div className="bg-white/60 dark:bg-dark-surface/60 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+                    <div className="bg-white dark:bg-dark-bg rounded border border-black/5 dark:border-white/5 p-4">
+                        <div className="flex items-center gap-2 text-sm text-[#71717A] mb-2">
                             <Calendar className="w-4 h-4" />
-                            <span>Days Until Exam</span>
+                            <span className="font-light">Days Until Exam</span>
                         </div>
                         {daysUntilExam !== null ? (
                             <div className="flex items-baseline gap-2">
-                                <span className={`text-3xl font-bold ${getUrgencyColor(daysUntilExam)}`}>
+                                <span className={`text-3xl ${getUrgencyText(daysUntilExam)}`}>
                                     {daysUntilExam}
                                 </span>
-                                <span className="text-slate-400 text-sm">days left</span>
+                                <span className="text-[#71717A] text-sm font-light">days left</span>
                             </div>
                         ) : (
-                            <p className="text-slate-400 text-sm">Set your exam date →</p>
+                            <p className="text-[#71717A] text-sm font-light">Set your exam date →</p>
                         )}
                         {goals?.targetExamDate && (
-                            <p className="text-xs text-slate-400 mt-1">
+                            <p className="text-xs text-[#71717A] mt-1 font-light">
                                 Target: {format(new Date(goals.targetExamDate), 'MMM d, yyyy')}
                             </p>
                         )}
                     </div>
 
                     {/* Score Progress */}
-                    <div className="bg-white/60 dark:bg-dark-surface/60 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+                    <div className="bg-white dark:bg-dark-bg rounded border border-black/5 dark:border-white/5 p-4">
+                        <div className="flex items-center gap-2 text-sm text-[#71717A] mb-2">
                             <TrendingUp className="w-4 h-4" />
-                            <span>Score Progress</span>
+                            <span className="font-light">Score Progress</span>
                         </div>
                         <div className="flex items-baseline gap-2 mb-3">
-                            <span className="text-3xl font-bold text-royal-600 dark:text-royal-400">
+                            <span className="text-3xl font-bold">
                                 {goals?.currentScore || 0}
                             </span>
-                            <span className="text-slate-400">/ {goals?.targetScore || 150}</span>
+                            <span className="text-[#71717A] font-light">/ {goals?.targetScore || 150}</span>
                         </div>
-                        <div className="relative h-2 bg-slate-200 dark:bg-dark-border rounded-full overflow-hidden">
+                        <div className="relative h-2 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${scoreProgress}%` }}
                                 transition={{ duration: 1, ease: "easeOut" }}
-                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-royal-500 to-gold-500 rounded-full"
+                                className="absolute inset-y-0 left-0 bg-black dark:bg-white rounded-full"
                             />
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">{scoreProgress}% of target</p>
+                        <p className="text-xs text-[#71717A] mt-1 font-light">{scoreProgress}% of target</p>
                     </div>
 
                     {/* Daily Goal */}
-                    <div className="bg-white/60 dark:bg-dark-surface/60 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+                    <div className="bg-white dark:bg-dark-bg rounded border border-black/5 dark:border-white/5 p-4">
+                        <div className="flex items-center gap-2 text-sm text-[#71717A] mb-2">
                             <Target className="w-4 h-4" />
-                            <span>Study Goals</span>
+                            <span className="font-light">Study Goals</span>
                         </div>
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                                <span className="text-sm text-slate-600 dark:text-slate-300">Daily:</span>
-                                <span className="font-bold text-royal-600 dark:text-royal-400">
+                                <span className="text-sm text-[#71717A] font-light">Daily:</span>
+                                <span className="font-bold">
                                     {goals?.dailyHoursGoal || 6}h
                                 </span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-sm text-slate-600 dark:text-slate-300">Weekly:</span>
-                                <span className="font-bold text-royal-600 dark:text-royal-400">
+                                <span className="text-sm text-[#71717A] font-light">Weekly:</span>
+                                <span className="font-bold">
                                     {goals?.weeklyHoursGoal || 35}h
                                 </span>
                             </div>
@@ -132,19 +132,19 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
                 </div>
             </motion.div>
 
-            {/* Settings Modal */}
+            {/* Settings Modal - Portfolio Style */}
             {showSettings && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-xl z-50 flex items-center justify-center p-4">
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.97 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white dark:bg-dark-surface rounded-2xl shadow-2xl max-w-md w-full p-6"
+                        className="bg-white dark:bg-dark-surface rounded-2xl shadow-xl max-w-md w-full p-6 border border-black/10 dark:border-white/10"
                     >
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Edit Goals</h3>
+                            <h3 className="text-xl font-medium">Edit <span className="font-bold">Goals</span></h3>
                             <button
                                 onClick={() => setShowSettings(false)}
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-dark-border rounded-lg"
+                                className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded border border-black/10 dark:border-white/10"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -152,7 +152,7 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                <label className="block text-sm font-normal mb-1">
                                     Target Exam Date
                                 </label>
                                 <input
@@ -165,7 +165,7 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    <label className="block text-sm font-normal mb-1">
                                         Current Score
                                     </label>
                                     <input
@@ -176,7 +176,7 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    <label className="block text-sm font-normal mb-1">
                                         Target Score
                                     </label>
                                     <input
@@ -190,7 +190,7 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    <label className="block text-sm font-normal mb-1">
                                         Daily Hours Goal
                                     </label>
                                     <input
@@ -201,7 +201,7 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    <label className="block text-sm font-normal mb-1">
                                         Weekly Hours Goal
                                     </label>
                                     <input
@@ -217,13 +217,13 @@ export default function GoalSection({ user, goals, onGoalsUpdate }) {
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={() => setShowSettings(false)}
-                                className="flex-1 px-4 py-2 border border-slate-200 dark:border-dark-border rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-dark-border transition-colors"
+                                className="flex-1 btn-outline px-4 py-2 rounded"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSaveGoals}
-                                className="flex-1 btn-primary px-4 py-2 rounded-xl flex items-center justify-center gap-2"
+                                className="flex-1 btn-primary px-4 py-2 rounded flex items-center justify-center gap-2"
                             >
                                 <Check className="w-4 h-4" />
                                 Save Goals

@@ -108,22 +108,65 @@ export const subscribeToUserStats = (uid, callback) => {
 // --- Logger / Tracker ---
 
 export const logStudySession = async (uid, data) => {
-    // data: { subject, topic, durationMinutes, activityType, date }
+    // data: { subject, topic, durationMinutes, mode, timestamp (optional - for manual entries) }
     try {
+        // Use provided timestamp for manual entries, or current time for tracked sessions
+        const sessionDate = data.timestamp ? new Date(data.timestamp) : new Date();
+
         // 1. Add to logs collection
         await addDoc(collection(db, "logs"), {
             uid,
-            ...data,
-            timestamp: Timestamp.now(),
-            date: new Date().toISOString() // easier for simple filtering
+            subject: data.subject,
+            topic: data.topic,
+            notes: data.notes || '',
+            durationMinutes: data.durationMinutes,
+            mode: data.mode || 'stopwatch',
+            timestamp: Timestamp.fromDate(sessionDate),
+            date: sessionDate.toISOString()
         });
 
         // 2. Update User Aggregates
         const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
+
+        // Update total hours and sessions
         await updateDoc(userRef, {
             totalStudyHours: increment(data.durationMinutes / 60),
             totalSessions: increment(1)
         });
+
+        // 3. Update Streak if this is a study session for today
+        const today = new Date();
+        const isToday = sessionDate.toDateString() === today.toDateString();
+
+        if (isToday && userData) {
+            const lastStudyDate = userData.lastStudyDate?.toDate();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            // Check if already studied today
+            const alreadyStudiedToday = lastStudyDate && lastStudyDate.toDateString() === today.toDateString();
+
+            if (!alreadyStudiedToday) {
+                const updates = {
+                    lastStudyDate: Timestamp.now()
+                };
+
+                // Check if studied yesterday (continue streak) or not (reset streak)
+                if (lastStudyDate && lastStudyDate.toDateString() === yesterday.toDateString()) {
+                    // Continue streak
+                    const newStreak = (userData.currentStreak || 0) + 1;
+                    updates.currentStreak = newStreak;
+                    updates.bestStreak = Math.max(userData.bestStreak || 0, newStreak);
+                } else if (!lastStudyDate || lastStudyDate.toDateString() !== today.toDateString()) {
+                    // Start/reset streak
+                    updates.currentStreak = 1;
+                }
+
+                await updateDoc(userRef, updates);
+            }
+        }
 
         return true;
     } catch (e) {
@@ -400,4 +443,20 @@ export const generateInsights = (stats, logs, goals) => {
     }
 
     return insights.slice(0, 3);
+};
+
+// --- Syllabus Subscription for Analytics ---
+export const subscribeToUserSyllabus = (uid, callback) => {
+    const syllabusRef = doc(db, "syllabi", uid);
+
+    return onSnapshot(syllabusRef, (docSnap) => {
+        if (docSnap.exists()) {
+            callback(docSnap.data());
+        } else {
+            callback(null);
+        }
+    }, (error) => {
+        console.error("Error subscribing to syllabus:", error);
+        callback(null);
+    });
 };

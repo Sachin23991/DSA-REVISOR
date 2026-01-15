@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { addTask, toggleTask, deleteTask, subscribeToTasks } from '../lib/db';
-import { Plus, CheckCircle2, Circle, Calendar as CalendarIcon, Trash2, Edit2, X, Flag, AlertCircle } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, Calendar as CalendarIcon, Trash2, Edit2, X, Flag } from 'lucide-react';
 import { format } from 'date-fns';
 import { ConfirmDialog, useConfirmDialog } from '../components/ui/ConfirmDialog';
 import toast from '../components/ui/Toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const PRIORITY_CONFIG = {
-    low: { label: 'Low', color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400', dot: 'bg-slate-400' },
-    medium: { label: 'Medium', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
-    high: { label: 'High', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', dot: 'bg-red-500' },
+    low: { label: 'Low', dot: 'bg-[#71717A]' },
+    medium: { label: 'Medium', dot: 'bg-black dark:bg-white' },
+    high: { label: 'High', dot: 'bg-black dark:bg-white' },
 };
 
 export default function Planner() {
@@ -20,7 +21,7 @@ export default function Planner() {
     const [loading, setLoading] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
     const [editText, setEditText] = useState('');
-    const [filter, setFilter] = useState('all'); // all, pending, completed
+    const [filter, setFilter] = useState('all');
     const { dialogProps, confirm } = useConfirmDialog();
 
     useEffect(() => {
@@ -93,7 +94,6 @@ export default function Planner() {
             return;
         }
         try {
-            // Use the db update function - we'll add this
             const { doc, updateDoc } = await import('firebase/firestore');
             const { db } = await import('../lib/firebase');
             await updateDoc(doc(db, "tasks", taskId), { text: editText.trim() });
@@ -130,14 +130,14 @@ export default function Planner() {
     const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
 
     return (
-        <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+        <div className="max-w-3xl mx-auto space-y-6 animate-fade-in pb-12">
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-1">Daily Planner</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Organize your study tasks</p>
+                    <h1 className="text-2xl font-medium">Daily <span className="font-bold">Planner</span></h1>
+                    <p className="text-[#71717A] font-light">Organize your study tasks</p>
                 </div>
-                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2 text-[#71717A] font-light">
                     <CalendarIcon className="w-4 h-4" />
                     {format(new Date(), 'EEEE, MMM d')}
                 </div>
@@ -145,22 +145,28 @@ export default function Planner() {
 
             {/* Progress Bar */}
             {tasks.length > 0 && (
-                <div className="card p-4 dark:bg-dark-surface dark:border-dark-border">
+                <motion.div 
+                    className="card p-4"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Today's Progress</span>
-                        <span className="text-sm text-slate-500 dark:text-slate-400">{completedCount}/{tasks.length} completed</span>
+                        <span className="text-sm font-medium">Today's Progress</span>
+                        <span className="text-sm text-[#71717A] font-light">{completedCount}/{tasks.length} completed</span>
                     </div>
-                    <div className="h-2 bg-slate-100 dark:bg-dark-bg rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-gradient-to-r from-royal-500 to-emerald-500 transition-all duration-500"
-                            style={{ width: `${progress}%` }}
+                    <div className="h-2 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
+                        <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className="h-full bg-black dark:bg-white rounded-full"
                         />
                     </div>
-                </div>
+                </motion.div>
             )}
 
             {/* Add Task */}
-            <form onSubmit={handleAdd} className="card p-4 dark:bg-dark-surface dark:border-dark-border">
+            <form onSubmit={handleAdd} className="card p-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                     <input
                         type="text"
@@ -168,160 +174,184 @@ export default function Planner() {
                         onChange={(e) => setNewTask(e.target.value)}
                         placeholder="Add a new task..."
                         maxLength={200}
-                        className="flex-1 px-4 py-3 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-500"
+                        className="input-field flex-1"
                     />
                     <div className="flex gap-2">
                         {/* Priority Selector */}
-                        <div className="flex bg-slate-100 dark:bg-dark-bg rounded-xl p-1">
+                        <div className="flex bg-black/5 dark:bg-white/5 rounded p-1">
                             {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
                                 <button
                                     key={key}
                                     type="button"
                                     onClick={() => setNewPriority(key)}
-                                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                                    className={`px-3 py-2 rounded text-xs font-medium transition-all flex items-center gap-1 ${
                                         newPriority === key 
-                                            ? config.color 
-                                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                            ? 'bg-black text-white dark:bg-white dark:text-black' 
+                                            : 'text-[#71717A] hover:text-black dark:hover:text-white'
                                     }`}
                                     title={`${config.label} Priority`}
                                 >
-                                    <Flag className="w-4 h-4" />
+                                    <Flag className="w-3 h-3" />
+                                    {config.label}
                                 </button>
                             ))}
                         </div>
-                        <button
+                        <motion.button
                             type="submit"
                             disabled={loading || !newTask.trim()}
-                            className="px-6 py-3 bg-gradient-to-r from-royal-500 to-royal-600 text-white rounded-xl font-medium shadow-lg shadow-royal-500/30 hover:shadow-xl hover:shadow-royal-500/40 transition-all disabled:opacity-50 flex items-center gap-2"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="btn-primary px-6 py-3 rounded flex items-center gap-2 disabled:opacity-50"
                         >
                             <Plus className="w-5 h-5" />
                             Add
-                        </button>
+                        </motion.button>
                     </div>
                 </div>
-                <p className="text-xs text-slate-400 mt-2">{newTask.length}/200 characters</p>
+                <p className="text-xs text-[#71717A] mt-2 font-light">{newTask.length}/200 characters</p>
             </form>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2">
+            <div className="flex bg-black/5 dark:bg-white/5 rounded p-1 w-fit">
                 {['all', 'pending', 'completed'].map((f) => (
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                        className={`px-4 py-2 rounded text-sm font-medium transition-all ${
                             filter === f
-                                ? 'bg-royal-100 text-royal-700 dark:bg-royal-900/40 dark:text-royal-300'
-                                : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-dark-surface'
+                                ? 'bg-black text-white dark:bg-white dark:text-black'
+                                : 'text-[#71717A] hover:text-black dark:hover:text-white'
                         }`}
                     >
                         {f.charAt(0).toUpperCase() + f.slice(1)}
-                        {f === 'all' && ` (${tasks.length})`}
-                        {f === 'pending' && ` (${tasks.filter(t => !t.completed).length})`}
-                        {f === 'completed' && ` (${completedCount})`}
+                        <span className="ml-1 opacity-70">
+                            {f === 'all' && `(${tasks.length})`}
+                            {f === 'pending' && `(${tasks.filter(t => !t.completed).length})`}
+                            {f === 'completed' && `(${completedCount})`}
+                        </span>
                     </button>
                 ))}
             </div>
 
             {/* Task List */}
             <div className="space-y-3">
-                {sortedTasks.length === 0 ? (
-                    <div className="card p-12 text-center dark:bg-dark-surface dark:border-dark-border">
-                        <CalendarIcon className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                        <p className="text-slate-500 dark:text-slate-400">
-                            {filter === 'all' ? 'No tasks yet. Start planning your day!' : `No ${filter} tasks.`}
-                        </p>
-                    </div>
-                ) : (
-                    sortedTasks.map((task) => (
-                        <div
-                            key={task.id}
-                            className={`card p-4 flex items-center gap-4 transition-all group dark:bg-dark-surface dark:border-dark-border ${
-                                task.completed ? 'opacity-60' : ''
-                            }`}
+                <AnimatePresence mode="popLayout">
+                    {sortedTasks.length === 0 ? (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="card p-12 text-center"
                         >
-                            {/* Priority Indicator */}
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                PRIORITY_CONFIG[task.priority]?.dot || PRIORITY_CONFIG.medium.dot
-                            }`} />
-
-                            {/* Checkbox */}
-                            <button
-                                onClick={() => handleToggle(task.id, task.completed)}
-                                className="focus:outline-none flex-shrink-0"
+                            <CalendarIcon className="w-12 h-12 text-[#71717A]/30 mx-auto mb-4" />
+                            <p className="text-[#71717A] font-light">
+                                {filter === 'all' ? 'No tasks yet. Start planning your day!' : `No ${filter} tasks.`}
+                            </p>
+                        </motion.div>
+                    ) : (
+                        sortedTasks.map((task, index) => (
+                            <motion.div
+                                key={task.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ delay: index * 0.05 }}
+                                layout
+                                className={`card p-4 flex items-center gap-4 transition-all group ${
+                                    task.completed ? 'opacity-60' : ''
+                                }`}
                             >
-                                {task.completed ? (
-                                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                                ) : (
-                                    <Circle className="w-6 h-6 text-slate-300 hover:text-royal-500 transition-colors" />
-                                )}
-                            </button>
+                                {/* Priority Indicator */}
+                                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                    task.priority === 'high' 
+                                        ? 'bg-black dark:bg-white ring-2 ring-black/20 dark:ring-white/20' 
+                                        : task.priority === 'low' 
+                                            ? 'bg-[#71717A]' 
+                                            : 'bg-black dark:bg-white'
+                                }`} />
 
-                            {/* Task Text or Edit Input */}
-                            {editingTask === task.id ? (
-                                <div className="flex-1 flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={editText}
-                                        onChange={(e) => setEditText(e.target.value)}
-                                        className="flex-1 px-3 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-lg text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-royal-500"
-                                        autoFocus
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') handleSaveEdit(task.id);
-                                            if (e.key === 'Escape') handleCancelEdit();
-                                        }}
-                                    />
-                                    <button
-                                        onClick={() => handleSaveEdit(task.id)}
-                                        className="p-2 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg"
-                                    >
-                                        <CheckCircle2 className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={handleCancelEdit}
-                                        className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    <span className={`flex-1 ${
-                                        task.completed 
-                                            ? 'text-slate-400 line-through' 
-                                            : 'text-slate-800 dark:text-white'
-                                    }`}>
-                                        {task.text}
-                                    </span>
+                                {/* Checkbox */}
+                                <button
+                                    onClick={() => handleToggle(task.id, task.completed)}
+                                    className="focus:outline-none flex-shrink-0"
+                                >
+                                    {task.completed ? (
+                                        <CheckCircle2 className="w-6 h-6 text-black dark:text-white" />
+                                    ) : (
+                                        <Circle className="w-6 h-6 text-[#71717A] hover:text-black dark:hover:text-white transition-colors" />
+                                    )}
+                                </button>
 
-                                    {/* Priority Badge */}
-                                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                                        PRIORITY_CONFIG[task.priority]?.color || PRIORITY_CONFIG.medium.color
-                                    }`}>
-                                        {PRIORITY_CONFIG[task.priority]?.label || 'Medium'}
-                                    </span>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {/* Task Text or Edit Input */}
+                                {editingTask === task.id ? (
+                                    <div className="flex-1 flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={editText}
+                                            onChange={(e) => setEditText(e.target.value)}
+                                            className="input-field flex-1"
+                                            autoFocus
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleSaveEdit(task.id);
+                                                if (e.key === 'Escape') handleCancelEdit();
+                                            }}
+                                        />
                                         <button
-                                            onClick={() => handleEdit(task)}
-                                            className="p-2 text-slate-400 hover:text-royal-500 hover:bg-royal-50 dark:hover:bg-royal-900/20 rounded-lg transition-colors"
-                                            title="Edit"
+                                            onClick={() => handleSaveEdit(task.id)}
+                                            className="p-2 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded"
                                         >
-                                            <Edit2 className="w-4 h-4" />
+                                            <CheckCircle2 className="w-5 h-5" />
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(task.id, task.text)}
-                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                            title="Delete"
+                                            onClick={handleCancelEdit}
+                                            className="p-2 text-[#71717A] hover:bg-black/5 dark:hover:bg-white/5 rounded"
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <X className="w-5 h-5" />
                                         </button>
                                     </div>
-                                </>
-                            )}
-                        </div>
-                    ))
-                )}
+                                ) : (
+                                    <>
+                                        <span className={`flex-1 ${
+                                            task.completed 
+                                                ? 'text-[#71717A] line-through' 
+                                                : ''
+                                        }`}>
+                                            {task.text}
+                                        </span>
+
+                                        {/* Priority Badge */}
+                                        <span className={`px-2 py-1 rounded text-xs font-medium border ${
+                                            task.priority === 'high' 
+                                                ? 'border-black dark:border-white bg-black/5 dark:bg-white/5' 
+                                                : task.priority === 'low'
+                                                    ? 'border-black/10 dark:border-white/10 text-[#71717A]'
+                                                    : 'border-black/10 dark:border-white/10'
+                                        }`}>
+                                            {PRIORITY_CONFIG[task.priority]?.label || 'Medium'}
+                                        </span>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handleEdit(task)}
+                                                className="p-2 text-[#71717A] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors"
+                                                title="Edit"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(task.id, task.text)}
+                                                className="p-2 text-[#71717A] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </motion.div>
+                        ))
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Confirmation Dialog */}

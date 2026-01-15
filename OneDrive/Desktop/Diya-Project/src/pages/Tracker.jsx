@@ -2,28 +2,36 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { logStudySession, subscribeToRecentLogs } from '../lib/db';
-import { Play, Pause, Square, RotateCcw, Target, PenLine, Clock, BookOpen, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { Play, Pause, Square, RotateCcw, Target, PenLine, Clock, BookOpen, Calendar, ChevronDown, ChevronUp, PlusCircle, Save } from 'lucide-react';
+import { formatDistanceToNow, format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from '../components/ui/Toast';
 
 export default function Tracker() {
     const { user } = useAuth();
-    const [mode, setMode] = useState('stopwatch'); // 'stopwatch' or 'pomodoro'
+    const [mode, setMode] = useState('stopwatch'); // 'stopwatch', 'pomodoro', 'manual'
     const [isRunning, setIsRunning] = useState(false);
-    const [elapsed, setElapsed] = useState(0); // in seconds
-    const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 mins for Pomodoro
+    const [elapsed, setElapsed] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(25 * 60);
+
+    // Manual entry state
+    const [manualHours, setManualHours] = useState('');
+    const [manualMinutes, setManualMinutes] = useState('');
+    const [manualDate, setManualDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
     const location = useLocation();
 
-    // Auto-start if quick session
     useEffect(() => {
         if (location.state?.quickSession) {
             setMode('pomodoro');
             setTimeLeft(location.state.quickSession * 60);
             setIsRunning(true);
-            setSubject('GS1'); // Default
+            setSubject('GS1');
             setTopic('Quick Revision');
-            // Clear state so it doesn't restart on refresh (optional but good practice)
+            window.history.replaceState({}, document.title);
+        }
+        if (location.state?.manualEntry) {
+            setMode('manual');
             window.history.replaceState({}, document.title);
         }
     }, [location]);
@@ -32,13 +40,11 @@ export default function Tracker() {
     const [topic, setTopic] = useState('');
     const [sessionNotes, setSessionNotes] = useState('');
 
-    // Session history
     const [recentSessions, setRecentSessions] = useState([]);
     const [showHistory, setShowHistory] = useState(true);
 
     const timerRef = useRef(null);
 
-    // Subscribe to recent logs
     useEffect(() => {
         if (!user) return;
         const unsub = subscribeToRecentLogs(user.uid, 10, (logs) => {
@@ -52,12 +58,11 @@ export default function Tracker() {
             timerRef.current = setInterval(() => {
                 if (mode === 'stopwatch') {
                     setElapsed(prev => prev + 1);
-                } else {
+                } else if (mode === 'pomodoro') {
                     setTimeLeft(prev => {
                         if (prev <= 1) {
                             clearInterval(timerRef.current);
                             setIsRunning(false);
-                            // Notify user
                             toast.success('Pomodoro complete! Time for a break 🎉');
                             return 0;
                         }
@@ -81,7 +86,6 @@ export default function Tracker() {
     const handleStop = async () => {
         setIsRunning(false);
 
-        // Calculate total duration in minutes
         let duration = 0;
         if (mode === 'stopwatch') {
             duration = Math.floor(elapsed / 60);
@@ -94,142 +98,260 @@ export default function Tracker() {
             return;
         }
 
+        await saveSession(duration, new Date().toISOString());
+        setElapsed(0);
+        setTimeLeft(25 * 60);
+        setTopic('');
+        setSessionNotes('');
+    };
+
+    const handleManualSave = async () => {
+        const hours = parseInt(manualHours) || 0;
+        const minutes = parseInt(manualMinutes) || 0;
+        const totalMinutes = hours * 60 + minutes;
+
+        if (totalMinutes < 1) {
+            toast.warning('Please enter at least 1 minute of study time');
+            return;
+        }
+
+        if (totalMinutes > 24 * 60) {
+            toast.warning('Maximum 24 hours per entry allowed');
+            return;
+        }
+
+        // Create timestamp for the selected date
+        const selectedDate = new Date(manualDate);
+        selectedDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+
+        await saveSession(totalMinutes, selectedDate.toISOString());
+
+        // Reset manual entry fields
+        setManualHours('');
+        setManualMinutes('');
+        setManualDate(format(new Date(), 'yyyy-MM-dd'));
+        setTopic('');
+        setSessionNotes('');
+    };
+
+    const saveSession = async (duration, timestamp) => {
         const sessionData = {
             subject,
             topic: topic || 'General Study',
             notes: sessionNotes,
             durationMinutes: duration,
             mode: mode,
-            timestamp: new Date().toISOString()
+            timestamp: timestamp
         };
 
         try {
             const success = await logStudySession(user.uid, sessionData);
             if (success) {
                 toast.success(`Session saved! ${duration} minutes logged 📚`);
-                // Reset
-                setElapsed(0);
-                setTimeLeft(25 * 60);
-                setTopic('');
-                setSessionNotes('');
             }
         } catch (error) {
             toast.error('Failed to save session');
         }
     };
 
-    const getSubjectColor = (subj) => {
-        const colors = {
-            'GS1': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-            'GS2': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-            'GS3': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-            'GS4': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-            'Optional': 'bg-royal-100 text-royal-700 dark:bg-royal-900/30 dark:text-royal-400',
-            'Essay': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
-        };
-        return colors[subj] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
-    };
-
     return (
         <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Study Tracker</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Track your focus sessions</p>
+                    <h1 className="text-2xl font-medium">Study <span className="font-bold">Tracker</span></h1>
+                    <p className="text-[#71717A] font-light">Track your focus sessions or log study hours manually</p>
                 </div>
 
-                {/* Mode Toggle */}
-                <div className="bg-white dark:bg-dark-surface p-1 rounded-xl border border-slate-200 dark:border-dark-border flex">
+                {/* Mode Toggle - Portfolio Style with proper dark mode */}
+                <div className="bg-[#FAFAFA] dark:bg-dark-surface p-1 rounded border border-black/10 dark:border-white/10 flex flex-wrap gap-1">
                     <button
                         onClick={() => { setIsRunning(false); setMode('stopwatch'); }}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'stopwatch'
-                            ? 'bg-royal-100 text-royal-700 dark:bg-royal-900/40 dark:text-royal-300'
-                            : 'text-slate-500 hover:text-royal-600'
+                        className={`px-4 py-2 rounded text-sm font-medium transition-all ${mode === 'stopwatch'
+                            ? 'bg-black text-white dark:bg-white dark:text-black'
+                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                             }`}
                     >
                         Stopwatch
                     </button>
                     <button
                         onClick={() => { setIsRunning(false); setMode('pomodoro'); }}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'pomodoro'
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                            : 'text-slate-500 hover:text-emerald-600'
+                        className={`px-4 py-2 rounded text-sm font-medium transition-all ${mode === 'pomodoro'
+                            ? 'bg-black text-white dark:bg-white dark:text-black'
+                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                             }`}
                     >
-                        Pomodoro (25m)
+                        Pomodoro
+                    </button>
+                    <button
+                        onClick={() => { setIsRunning(false); setMode('manual'); }}
+                        className={`px-4 py-2 rounded text-sm font-medium transition-all flex items-center gap-1 ${mode === 'manual'
+                            ? 'bg-black text-white dark:bg-white dark:text-black'
+                            : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                            }`}
+                    >
+                        <PlusCircle className="w-4 h-4" />
+                        Log Hours
                     </button>
                 </div>
             </div>
 
             <div className="grid lg:grid-cols-2 gap-6">
-                {/* Timer Card */}
-                <div className="card p-8 flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden bg-white dark:bg-dark-surface dark:border-dark-border">
-                    {/* Background Ring Animation */}
-                    {isRunning && (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-                            <div className="w-64 h-64 rounded-full border-[20px] border-royal-500 animate-ping" />
+                {/* Timer / Manual Entry Card */}
+                <motion.div
+                    className="card p-8 flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
+                    {mode === 'manual' ? (
+                        /* Manual Entry UI */
+                        <div className="w-full max-w-sm space-y-6">
+                            <div className="text-center mb-4">
+                                <PlusCircle className="w-12 h-12 mx-auto mb-3 text-black dark:text-white" />
+                                <h3 className="text-xl font-medium">Log Study <span className="font-bold">Hours</span></h3>
+                                <p className="text-[#71717A] text-sm font-light mt-1">
+                                    Add study time you completed offline
+                                </p>
+                            </div>
+
+                            {/* Date Selection */}
+                            <div>
+                                <label className="block text-sm text-[#71717A] mb-1 font-light">Date</label>
+                                <input
+                                    type="date"
+                                    value={manualDate}
+                                    onChange={(e) => setManualDate(e.target.value)}
+                                    max={format(new Date(), 'yyyy-MM-dd')}
+                                    className="input-field text-center"
+                                />
+                            </div>
+
+                            {/* Time Input */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-[#71717A] mb-1 font-light">Hours</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="24"
+                                        value={manualHours}
+                                        onChange={(e) => setManualHours(e.target.value)}
+                                        placeholder="0"
+                                        className="input-field text-center text-2xl font-bold"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-[#71717A] mb-1 font-light">Minutes</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="59"
+                                        value={manualMinutes}
+                                        onChange={(e) => setManualMinutes(e.target.value)}
+                                        placeholder="0"
+                                        className="input-field text-center text-2xl font-bold"
+                                    />
+                                </div>
+                            </div>
+
+                            <p className="text-center text-[#71717A] text-sm font-light">
+                                Total: <span className="font-bold text-black dark:text-white">
+                                    {parseInt(manualHours || 0)}h {parseInt(manualMinutes || 0)}m
+                                </span>
+                            </p>
+
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleManualSave}
+                                className="w-full btn-primary py-4 rounded font-medium text-lg flex items-center justify-center gap-2"
+                            >
+                                <Save className="w-5 h-5" />
+                                Save Study Hours
+                            </motion.button>
                         </div>
+                    ) : (
+                        /* Timer UI */
+                        <>
+                            {/* Background Ring Animation */}
+                            {isRunning && (
+                                <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                                    <div className="w-64 h-64 rounded-full border-[20px] border-black dark:border-white animate-ping" />
+                                </div>
+                            )}
+
+                            <motion.div
+                                className={`text-7xl font-bold mb-8 z-10 tracking-tight ${isRunning ? 'text-black dark:text-white' : 'text-[#71717A]'}`}
+                                key={mode === 'stopwatch' ? elapsed : timeLeft}
+                                initial={{ scale: 0.95 }}
+                                animate={{ scale: 1 }}
+                            >
+                                {mode === 'stopwatch' ? formatTime(elapsed) : formatTime(timeLeft)}
+                            </motion.div>
+
+                            <div className="flex gap-4 z-10">
+                                {!isRunning ? (
+                                    <motion.button
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => setIsRunning(true)}
+                                        className="w-16 h-16 bg-black dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black shadow-lg border-2 border-black dark:border-white"
+                                    >
+                                        <Play className="w-8 h-8 ml-1" />
+                                    </motion.button>
+                                ) : (
+                                    <motion.button
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => setIsRunning(false)}
+                                        className="w-16 h-16 bg-[#71717A] rounded-full flex items-center justify-center text-white shadow-lg"
+                                    >
+                                        <Pause className="w-8 h-8" />
+                                    </motion.button>
+                                )}
+
+                                {(elapsed > 0 || (mode === 'pomodoro' && timeLeft < 25 * 60)) && !isRunning && (
+                                    <motion.button
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleStop}
+                                        className="w-16 h-16 bg-black dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black shadow-lg border-2 border-black dark:border-white"
+                                        title="Finish & Save"
+                                    >
+                                        <Square className="w-6 h-6" />
+                                    </motion.button>
+                                )}
+
+                                {!isRunning && (elapsed > 0 || (mode === 'pomodoro' && timeLeft < 25 * 60)) && (
+                                    <motion.button
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => { setElapsed(0); setTimeLeft(25 * 60); }}
+                                        className="w-16 h-16 bg-black/5 dark:bg-white/10 rounded-full flex items-center justify-center text-black dark:text-white border-2 border-black/10 dark:border-white/10"
+                                        title="Reset"
+                                    >
+                                        <RotateCcw className="w-6 h-6" />
+                                    </motion.button>
+                                )}
+                            </div>
+
+                            <p className="mt-8 text-[#71717A] text-sm font-light">
+                                {isRunning ? 'Focus Mode ON 🎯' : 'Ready to start?'}
+                            </p>
+                        </>
                     )}
+                </motion.div>
 
-                    <div className={`text-7xl font-mono font-bold mb-8 z-10 ${isRunning ? 'text-royal-600 dark:text-royal-400' : 'text-slate-800 dark:text-slate-200'
-                        }`}>
-                        {mode === 'stopwatch' ? formatTime(elapsed) : formatTime(timeLeft)}
-                    </div>
-
-                    <div className="flex gap-4 z-10">
-                        {!isRunning ? (
-                            <button
-                                onClick={() => setIsRunning(true)}
-                                className="w-16 h-16 bg-emerald-500 hover:bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 hover:scale-110 transition-all"
-                            >
-                                <Play className="w-8 h-8 ml-1" />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => setIsRunning(false)}
-                                className="w-16 h-16 bg-amber-500 hover:bg-amber-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-amber-500/30 hover:scale-110 transition-all"
-                            >
-                                <Pause className="w-8 h-8" />
-                            </button>
-                        )}
-
-                        {(elapsed > 0 || (mode === 'pomodoro' && timeLeft < 25 * 60)) && !isRunning && (
-                            <button
-                                onClick={handleStop}
-                                className="w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-500/30 hover:scale-110 transition-all"
-                                title="Finish & Save"
-                            >
-                                <Square className="w-6 h-6" />
-                            </button>
-                        )}
-
-                        {!isRunning && (elapsed > 0 || (mode === 'pomodoro' && timeLeft < 25 * 60)) && (
-                            <button
-                                onClick={() => { setElapsed(0); setTimeLeft(25 * 60); }}
-                                className="w-16 h-16 bg-slate-100 dark:bg-dark-bg hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-400 hover:scale-110 transition-all"
-                                title="Reset"
-                            >
-                                <RotateCcw className="w-6 h-6" />
-                            </button>
-                        )}
-                    </div>
-
-                    <p className="mt-8 text-slate-500 dark:text-slate-400 text-sm">
-                        {isRunning ? 'Focus Mode ON 🎯' : 'Ready to start?'}
-                    </p>
-                </div>
-
-                {/* Session Details */}
+                {/* Session Details - Portfolio Style */}
                 <div className="space-y-6">
-                    <div className="card p-6 dark:bg-dark-surface dark:border-dark-border">
-                        <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-                            <Target className="w-5 h-5 text-gold-500" />
-                            Session Goal
+                    <div className="card p-6">
+                        <h3 className="font-medium mb-4 flex items-center gap-2">
+                            <Target className="w-5 h-5" />
+                            Session <span className="font-bold">Goal</span>
                         </h3>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Subject</label>
+                                <label className="block text-sm text-[#71717A] mb-1 font-light">Subject</label>
                                 <select
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
@@ -242,11 +364,13 @@ export default function Tracker() {
                                     <option value="GS4">GS4 - Ethics</option>
                                     <option value="Optional">Optional Subject</option>
                                     <option value="Essay">Essay Writing</option>
+                                    <option value="Current Affairs">Current Affairs</option>
+                                    <option value="Other">Other</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Topic</label>
+                                <label className="block text-sm text-[#71717A] mb-1 font-light">Topic</label>
                                 <input
                                     type="text"
                                     value={topic}
@@ -259,87 +383,108 @@ export default function Tracker() {
                         </div>
                     </div>
 
-                    <div className="card p-6 dark:bg-dark-surface dark:border-dark-border flex-1">
-                        <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-                            <PenLine className="w-5 h-5 text-royal-500" />
-                            Session Notes
+                    <div className="card p-6 flex-1">
+                        <h3 className="font-medium mb-4 flex items-center gap-2">
+                            <PenLine className="w-5 h-5" />
+                            Session <span className="font-bold">Notes</span>
                         </h3>
                         <textarea
                             value={sessionNotes}
                             onChange={(e) => setSessionNotes(e.target.value)}
                             placeholder="Jot down quick thoughts during your session..."
                             maxLength={500}
-                            className="w-full h-32 p-3 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-royal-500 resize-none text-slate-700 dark:text-slate-200"
+                            className="input-field h-32 resize-none"
                         />
-                        <p className="text-xs text-slate-400 mt-1">{sessionNotes.length}/500</p>
+                        <p className="text-xs text-[#71717A] mt-1 font-light">{sessionNotes.length}/500</p>
                     </div>
                 </div>
             </div>
 
-            {/* Session History */}
-            <div className="card dark:bg-dark-surface dark:border-dark-border overflow-hidden">
+            {/* Session History - Portfolio Style */}
+            <div className="card overflow-hidden">
                 <button
                     onClick={() => setShowHistory(!showHistory)}
-                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-dark-bg transition-colors"
+                    className="w-full p-4 flex items-center justify-between hover:bg-[#FAFAFA] dark:hover:bg-dark-surface transition-colors"
                 >
-                    <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-royal-500" />
-                        Recent Sessions
-                        <span className="text-sm font-normal text-slate-500">({recentSessions.length})</span>
+                    <h3 className="font-medium flex items-center gap-2">
+                        <Clock className="w-5 h-5" />
+                        Recent <span className="font-bold">Sessions</span>
+                        <span className="text-sm font-light text-[#71717A]">({recentSessions.length})</span>
                     </h3>
                     {showHistory ? (
-                        <ChevronUp className="w-5 h-5 text-slate-400" />
+                        <ChevronUp className="w-5 h-5 text-[#71717A]" />
                     ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
+                        <ChevronDown className="w-5 h-5 text-[#71717A]" />
                     )}
                 </button>
 
-                {showHistory && (
-                    <div className="border-t border-slate-100 dark:border-dark-border">
-                        {recentSessions.length === 0 ? (
-                            <div className="p-8 text-center">
-                                <BookOpen className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                                <p className="text-slate-500 dark:text-slate-400">No study sessions yet. Start your first session!</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-slate-100 dark:divide-dark-border">
-                                {recentSessions.map((session) => (
-                                    <div key={session.id} className="p-4 hover:bg-slate-50 dark:hover:bg-dark-bg transition-colors">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                    <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${getSubjectColor(session.subject)}`}>
-                                                        {session.subject}
-                                                    </span>
-                                                    <span className="text-slate-800 dark:text-white font-medium truncate">
-                                                        {session.topic || 'General Study'}
-                                                    </span>
+                <AnimatePresence>
+                    {showHistory && (
+                        <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: 'auto' }}
+                            exit={{ height: 0 }}
+                            className="border-t border-black/5 dark:border-white/5 overflow-hidden"
+                        >
+                            {recentSessions.length === 0 ? (
+                                <div className="p-8 text-center">
+                                    <BookOpen className="w-12 h-12 text-[#71717A]/30 mx-auto mb-3" />
+                                    <p className="text-[#71717A] font-light">No study sessions yet. Start your first session!</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-black/5 dark:divide-white/5">
+                                    {recentSessions.map((session, index) => (
+                                        <motion.div
+                                            key={session.id}
+                                            className="p-4 hover:bg-[#FAFAFA] dark:hover:bg-dark-surface transition-colors"
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                        <span className="px-2 py-0.5 rounded text-xs font-medium border border-black/10 dark:border-white/10 text-black dark:text-white">
+                                                            {session.subject}
+                                                        </span>
+                                                        <span className="font-medium text-black dark:text-white truncate">
+                                                            {session.topic || 'General Study'}
+                                                        </span>
+                                                        {session.mode === 'manual' && (
+                                                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-black/5 dark:bg-white/10 text-[#71717A]">
+                                                                Manual
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {session.notes && (
+                                                        <p className="text-sm text-[#71717A] line-clamp-2 mt-1 font-light">
+                                                            {session.notes}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                                {session.notes && (
-                                                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
-                                                        {session.notes}
-                                                    </p>
-                                                )}
+                                                <div className="text-right flex-shrink-0">
+                                                    <div className="text-lg font-bold text-black dark:text-white">
+                                                        {session.durationMinutes >= 60
+                                                            ? `${Math.floor(session.durationMinutes / 60)}h ${session.durationMinutes % 60}m`
+                                                            : `${session.durationMinutes}m`
+                                                        }
+                                                    </div>
+                                                    <div className="text-xs text-[#71717A] flex items-center gap-1 justify-end font-light">
+                                                        <Calendar className="w-3 h-3" />
+                                                        {session.timestamp
+                                                            ? formatDistanceToNow(new Date(session.timestamp), { addSuffix: true })
+                                                            : 'Recently'
+                                                        }
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-right flex-shrink-0">
-                                                <div className="text-lg font-bold text-slate-800 dark:text-white">
-                                                    {session.durationMinutes}m
-                                                </div>
-                                                <div className="text-xs text-slate-400 flex items-center gap-1 justify-end">
-                                                    <Calendar className="w-3 h-3" />
-                                                    {session.timestamp
-                                                        ? formatDistanceToNow(new Date(session.timestamp), { addSuffix: true })
-                                                        : 'Recently'
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

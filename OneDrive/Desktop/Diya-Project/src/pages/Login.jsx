@@ -3,6 +3,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, Loader2, ArrowLeft, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const ALLOWED_UID = "EC4mgfegv4NtQiutuIau7i6TIba2";
 
@@ -43,88 +44,105 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-dark-bg flex transition-colors duration-300">
-      {/* Left Panel - Illustration */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-royal-900 to-emerald-900 items-center justify-center p-12 relative overflow-hidden">
-        {/* Abstract Shapes */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-20">
-          <div className="absolute top-10 left-10 w-64 h-64 bg-gold-500 rounded-full blur-[100px]" />
-          <div className="absolute bottom-10 right-10 w-64 h-64 bg-emerald-500 rounded-full blur-[100px]" />
+    <div className="min-h-screen bg-white dark:bg-dark-bg flex transition-colors duration-300">
+      {/* Left Panel - Portfolio Style with Illustration */}
+      <div className="hidden lg:flex flex-1 bg-black items-center justify-center p-12 relative overflow-hidden">
+        {/* Abstract Grid */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+            backgroundSize: '50px 50px'
+          }} />
         </div>
 
-        <div className="max-w-xl text-center relative z-10 text-white">
-          <img 
-            src="/login_girl.png?v=2" 
-            alt="Secure Login" 
-            className="w-full max-w-md mx-auto mb-8 drop-shadow-2xl animate-float"
+        <motion.div
+          className="max-w-xl text-center relative z-10 text-white"
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+          <motion.img
+            src="/loginpage.svg"
+            alt="Secure Login"
+            className="w-full max-w-md mx-auto mb-8 drop-shadow-2xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
           />
-          <h2 className="text-4xl font-serif font-bold mb-4 text-gold-400">
-            Secure Admin Portal
+          <h2 className="text-4xl font-medium mb-4">
+            Secure Admin <span className="text-stroke">Portal</span>
           </h2>
-          <p className="text-royal-200 text-lg leading-relaxed">
+          <p className="text-white/60 text-lg leading-relaxed font-light">
             "Success is the sum of small efforts, repeated day in and day out."
           </p>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Right Panel - Form */}
+      {/* Right Panel - Form - Portfolio Style */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-dark-surface">
-        <div className="w-full max-w-md space-y-8">
+        <motion.div
+          className="w-full max-w-md space-y-8"
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+        >
           {/* Back Link */}
-          <Link 
-            to="/" 
-            className="inline-flex items-center gap-2 text-slate-500 hover:text-royal-600 dark:text-slate-400 dark:hover:text-royal-400 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
+          <motion.div whileHover={{ x: -5 }}>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-[#71717A] hover:text-black dark:hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Link>
+          </motion.div>
 
-          <div className="text-center lg:text-left">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-royal-100 text-royal-600 mb-4 dark:bg-royal-900/30 dark:text-royal-400">
+          <div className="text-left">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded border border-black dark:border-dark-border mb-4">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Welcome Back</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-2">
+            <h1 className="text-3xl font-medium">Welcome <span className="font-bold">Back</span></h1>
+            <p className="text-[#71717A] mt-2 text-sm font-light">
               Please enter your credentials to access the dashboard.
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-normal mb-2">
                 Email Address
               </label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-royal-500 transition-colors" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#71717A] group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@example.com"
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-500 focus:border-transparent transition-all dark:bg-dark-bg dark:border-dark-border dark:text-white"
+                  className="input-field pl-12"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-normal mb-2">
                 Password
               </label>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-royal-500 transition-colors" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#71717A] group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-500 focus:border-transparent transition-all dark:bg-dark-bg dark:border-dark-border dark:text-white"
+                  className="input-field pl-12 pr-12"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-black dark:hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -132,16 +150,22 @@ export default function Login() {
             </div>
 
             {error && (
-              <div className="p-4 bg-red-50 border border-red-100 dark:bg-red-900/20 dark:border-red-900/30 rounded-xl flex items-center gap-3 text-red-600 dark:text-red-400 text-sm animate-fade-in">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              <motion.div
+                className="p-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded flex items-center gap-3 text-sm animate-fade-in"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white shrink-0" />
                 {error}
-              </div>
+              </motion.div>
             )}
 
-            <button
+            <motion.button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-royal-600 to-royal-500 hover:from-royal-700 hover:to-royal-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-royal-500/30 hover:shadow-xl hover:shadow-royal-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-[0.98]"
+              className="w-full btn-primary py-4 rounded font-medium text-lg flex items-center justify-center gap-2"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               {loading ? (
                 <>
@@ -151,15 +175,15 @@ export default function Login() {
               ) : (
                 'Access Dashboard'
               )}
-            </button>
+            </motion.button>
           </form>
 
           <div className="text-center">
-            <p className="text-xs text-slate-400 dark:text-slate-500">
+            <p className="text-xs text-[#71717A] font-light">
               Protected by 256-bit encryption. Authorized personnel only.
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

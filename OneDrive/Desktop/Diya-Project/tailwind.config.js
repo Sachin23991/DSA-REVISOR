@@ -8,58 +8,29 @@ export default {
     theme: {
         extend: {
             colors: {
-                // Primary Brand Colors - Now Royal Green based as per user request
-                royal: {
-                    50: '#f2fcf5',
-                    100: '#e1f8e8',
-                    200: '#c5eed4',
-                    300: '#96deb6',
-                    400: '#5cc493',
-                    500: '#34a876',
-                    600: '#24875c', // Primary Royal Green
-                    700: '#1e6c4b',
-                    800: '#1a563d',
-                    900: '#164734',
-                    950: '#0b261e',
+                // Portfolio-style minimal black/white palette
+                primary: {
+                    DEFAULT: '#000000',
+                    light: '#71717A',
+                    muted: '#A1A1AA',
                 },
-                gold: {
-                    50: '#fffbea',
-                    100: '#fff1c5',
-                    200: '#ffe285',
-                    300: '#ffcf46',
-                    400: '#ffbf1a', // Rich Gold
-                    500: '#e6a200',
-                    600: '#c27e00',
-                    700: '#9b5d00',
-                    800: '#7e4808',
-                    900: '#683b0d',
-                    950: '#3e1f03',
+                surface: {
+                    DEFAULT: '#FFFFFF',
+                    muted: '#FAFAFA',
+                    border: '#000000',
                 },
-                yellow: {
-                    50: '#fefce8',
-                    100: '#fef9c3',
-                    200: '#fef08a',
-                    300: '#fde047',
-                    400: '#facc15',
-                    500: '#eab308',
-                    600: '#ca8a04',
-                    700: '#a16207',
-                    800: '#854d0e',
-                    900: '#713f12',
-                    950: '#422006',
-                },
-                // Dark Mode Special Palette - Deep Green/Gold Tint
+                // Dark mode palette (inverted)
                 dark: {
-                    bg: '#051a12',      // Deepest Green Black
-                    surface: '#0b261e',  // Dark Green Surface
-                    border: '#1a563d',   // Green Border
-                    text: '#ecfdf5',     // Light Greenish White
-                    muted: '#6ee7b7',    // Muted Green
+                    bg: '#0a0a0a',
+                    surface: '#171717',
+                    border: '#262626',
+                    text: '#fafafa',
+                    muted: '#a1a1aa',
                 }
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'],
-                serif: ['Merriweather', 'Georgia', 'serif'],
+                sora: ['Sora', 'sans-serif'],
+                sans: ['Sora', 'system-ui', 'sans-serif'],
             },
             animation: {
                 'fade-in': 'fadeIn 0.5s ease-out forwards',

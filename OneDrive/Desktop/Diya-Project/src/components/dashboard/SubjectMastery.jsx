@@ -2,29 +2,17 @@ import { motion } from 'framer-motion';
 import { BookOpen, AlertCircle, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-const SUBJECT_COLORS = {
-    'History': '#f59e0b',
-    'Polity': '#3b82f6',
-    'Geography': '#10b981',
-    'Economics': '#8b5cf6',
-    'Ethics': '#ec4899',
-    'Science': '#06b6d4',
-    'Current Affairs': '#f97316',
-    'Environment': '#22c55e',
-    'Other': '#64748b'
-};
-
 export default function SubjectMastery({ subjects }) {
     if (!subjects || subjects.length === 0) {
         return (
             <div className="card p-6">
                 <div className="flex items-center gap-2 mb-4">
-                    <BookOpen className="w-5 h-5 text-royal-500" />
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">Subject Mastery</h3>
+                    <BookOpen className="w-5 h-5" />
+                    <h3 className="text-lg font-medium">Subject <span className="font-bold">Mastery</span></h3>
                 </div>
-                <div className="text-center py-8 text-slate-400">
+                <div className="text-center py-8 text-[#71717A]">
                     <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>Start studying to see your subject mastery!</p>
+                    <p className="font-light">Start studying to see your subject mastery!</p>
                 </div>
             </div>
         );
@@ -38,10 +26,10 @@ export default function SubjectMastery({ subjects }) {
         >
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-royal-500" />
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">Subject Mastery</h3>
+                    <BookOpen className="w-5 h-5" />
+                    <h3 className="text-lg font-medium">Subject <span className="font-bold">Mastery</span></h3>
                 </div>
-                <span className="text-xs text-slate-400">Based on study time</span>
+                <span className="text-xs text-[#71717A] font-light">Based on study time</span>
             </div>
 
             <div className="space-y-4">
@@ -55,46 +43,39 @@ export default function SubjectMastery({ subjects }) {
                     >
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                                <span
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: SUBJECT_COLORS[subject.name] || SUBJECT_COLORS['Other'] }}
-                                />
-                                <span className="font-medium text-slate-700 dark:text-slate-200">
+                                <span className="w-3 h-3 rounded-full bg-black dark:bg-white" />
+                                <span className="font-medium">
                                     {subject.name}
                                 </span>
                                 {subject.needsRevision && (
-                                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
+                                    <span className="flex items-center gap-1 text-xs bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded border border-black/10 dark:border-white/10">
                                         <AlertCircle className="w-3 h-3" />
                                         Needs revision
                                     </span>
                                 )}
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className="text-sm font-bold text-slate-800 dark:text-white">
+                                <span className="text-sm font-bold">
                                     {subject.mastery}%
                                 </span>
-                                <span className="text-xs text-slate-400">
+                                <span className="text-xs text-[#71717A] font-light">
                                     {subject.hours}h
                                 </span>
                             </div>
                         </div>
 
-                        {/* Progress Bar */}
-                        <div className="relative h-2 bg-slate-100 dark:bg-dark-border rounded-full overflow-hidden">
+                        {/* Progress Bar - Portfolio Style */}
+                        <div className="relative h-2 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${subject.mastery}%` }}
                                 transition={{ duration: 0.8, delay: index * 0.1, ease: "easeOut" }}
-                                className="absolute inset-y-0 left-0 rounded-full"
-                                style={{
-                                    backgroundColor: SUBJECT_COLORS[subject.name] || SUBJECT_COLORS['Other'],
-                                    opacity: subject.mastery < 30 ? 0.6 : 1
-                                }}
+                                className="absolute inset-y-0 left-0 rounded-full bg-black dark:bg-white"
                             />
                         </div>
 
                         {/* Hover details */}
-                        <div className="flex items-center justify-between mt-1 text-xs text-slate-400">
+                        <div className="flex items-center justify-between mt-1 text-xs text-[#71717A] font-light">
                             <span>{subject.sessions} sessions</span>
                             {subject.lastStudied && (
                                 <span className="flex items-center gap-1">
@@ -108,10 +89,10 @@ export default function SubjectMastery({ subjects }) {
             </div>
 
             {/* Legend */}
-            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-dark-border">
+            <div className="mt-6 pt-4 border-t border-black/5 dark:border-white/5">
                 <div className="flex flex-wrap gap-3">
-                    <div className="flex items-center gap-1 text-xs text-slate-400">
-                        <div className="w-8 h-2 bg-gradient-to-r from-red-400 via-yellow-400 to-green-400 rounded-full" />
+                    <div className="flex items-center gap-1 text-xs text-[#71717A] font-light">
+                        <div className="w-8 h-2 bg-gradient-to-r from-black/20 to-black dark:from-white/20 dark:to-white rounded-full" />
                         <span>Low → High Mastery</span>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /**
  * Reusable confirmation dialog component
@@ -23,68 +24,81 @@ export function ConfirmDialog({
     cancelText = "Cancel",
     isDangerous = false
 }) {
-    if (!isOpen) return null;
-
     const handleConfirm = () => {
         onConfirm();
         onClose();
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={onClose}
-            />
-
-            {/* Dialog */}
-            <div className="relative bg-white dark:bg-dark-surface rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-
-                <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isDangerous
-                            ? 'bg-red-100 dark:bg-red-900/30'
-                            : 'bg-amber-100 dark:bg-amber-900/30'
-                        }`}>
-                        <AlertTriangle className={`w-6 h-6 ${isDangerous ? 'text-red-500' : 'text-amber-500'
-                            }`} />
-                    </div>
-
-                    <div className="flex-1">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
-                            {title}
-                        </h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                            {message}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex gap-3 mt-6 justify-end">
-                    <button
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm"
                         onClick={onClose}
-                        className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-dark-border dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-colors"
+                    />
+
+                    {/* Dialog */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="relative bg-white dark:bg-dark-surface rounded-2xl shadow-2xl max-w-md w-full p-6 border border-black/10 dark:border-white/10"
                     >
-                        {cancelText}
-                    </button>
-                    <button
-                        onClick={handleConfirm}
-                        className={`px-5 py-2.5 rounded-xl font-medium transition-colors ${isDangerous
-                                ? 'bg-red-500 hover:bg-red-600 text-white'
-                                : 'bg-royal-500 hover:bg-royal-600 text-white'
-                            }`}
-                    >
-                        {confirmText}
-                    </button>
+                        <button
+                            onClick={onClose}
+                            className="absolute top-4 right-4 p-1 text-[#71717A] hover:text-black dark:hover:text-white transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex items-start gap-4">
+                            <div className={`w-12 h-12 rounded flex items-center justify-center flex-shrink-0 border ${isDangerous
+                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                : 'border-black dark:border-white bg-black/5 dark:bg-white/5'
+                                }`}>
+                                <AlertTriangle className={`w-6 h-6 ${isDangerous ? 'text-red-500' : ''}`} />
+                            </div>
+
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold mb-2">
+                                    {title}
+                                </h3>
+                                <p className="text-[#71717A] text-sm font-light">
+                                    {message}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6 justify-end">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={onClose}
+                                className="btn-outline px-5 py-2.5 rounded font-medium"
+                            >
+                                {cancelText}
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleConfirm}
+                                className={`px-5 py-2.5 rounded font-medium transition-colors ${isDangerous
+                                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                                    : 'btn-primary'
+                                    }`}
+                            >
+                                {confirmText}
+                            </motion.button>
+                        </div>
+                    </motion.div>
                 </div>
-            </div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 }
 

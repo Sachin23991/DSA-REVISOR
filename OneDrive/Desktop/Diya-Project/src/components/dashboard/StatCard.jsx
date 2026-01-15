@@ -8,40 +8,28 @@ export default function StatCard({
     label,
     value,
     subtitle,
-    color = 'royal',
+    color = 'black',
     trend,
     trendValue,
     sparklineData,
     tooltip,
     onClick
 }) {
+    // Portfolio-style black/white color scheme
     const colors = {
-        gold: {
-            bg: 'bg-gold-50 dark:bg-gold-900/20',
-            text: 'text-gold-600 dark:text-gold-400',
-            line: '#f59e0b'
+        black: {
+            bg: 'bg-black/5 dark:bg-white/10',
+            text: 'text-black dark:text-white',
+            line: '#000000'
         },
-        royal: {
-            bg: 'bg-royal-50 dark:bg-royal-900/20',
-            text: 'text-royal-600 dark:text-royal-400',
-            line: '#24875c'
-        },
-        emerald: {
-            bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-            text: 'text-emerald-600 dark:text-emerald-400',
-            line: '#10b981'
-        },
-        purple: {
-            bg: 'bg-purple-50 dark:bg-purple-900/20',
-            text: 'text-purple-600 dark:text-purple-400',
-            line: '#8b5cf6'
-        },
-        red: {
-            bg: 'bg-red-50 dark:bg-red-900/20',
-            text: 'text-red-600 dark:text-red-400',
-            line: '#ef4444'
+        muted: {
+            bg: 'bg-[#FAFAFA] dark:bg-dark-surface',
+            text: 'text-[#71717A] dark:text-dark-muted',
+            line: '#71717A'
         }
     };
+
+    const currentColor = colors[color] || colors.black;
 
     const getTrendIcon = () => {
         if (!trend) return null;
@@ -52,15 +40,14 @@ export default function StatCard({
 
     const getTrendColor = () => {
         if (!trend) return '';
-        if (trend === 'up') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-        if (trend === 'down') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-        return 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+        if (trend === 'up') return 'bg-black/10 text-black dark:bg-white/20 dark:text-white';
+        if (trend === 'down') return 'bg-black/5 text-[#71717A] dark:bg-white/10 dark:text-dark-muted';
+        return 'bg-black/5 text-[#71717A] dark:bg-white/5 dark:text-dark-muted';
     };
 
     // Generate sparkline data if not provided
     const chartData = useMemo(() => {
         if (sparklineData) return sparklineData;
-        // Generate placeholder data
         return Array.from({ length: 7 }, (_, i) => ({
             value: Math.random() * 10 + 5
         }));
@@ -72,17 +59,17 @@ export default function StatCard({
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
             onClick={onClick}
-            className={`card p-6 transition-all duration-300 ${onClick ? 'cursor-pointer' : ''}`}
+            className={`card p-6 transition-all duration-300 hover:border-black/20 dark:hover:border-white/20 ${onClick ? 'cursor-pointer' : ''}`}
             title={tooltip}
         >
             <div className="flex justify-between items-start mb-4">
-                <div className={`w-12 h-12 rounded-xl ${colors[color].bg} flex items-center justify-center shadow-sm`}>
-                    <Icon className={`w-6 h-6 ${colors[color].text}`} />
+                <div className={`w-12 h-12 rounded border border-black/10 dark:border-white/10 ${currentColor.bg} flex items-center justify-center`}>
+                    <Icon className={`w-6 h-6 ${currentColor.text}`} />
                 </div>
 
-                {/* Trend Badge */}
+                {/* Trend Badge - Portfolio Style */}
                 {trendValue && (
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${getTrendColor()}`}>
+                    <span className={`text-xs font-light px-2 py-1 rounded flex items-center gap-1 border border-black/10 dark:border-white/10 ${getTrendColor()}`}>
                         {getTrendIcon()}
                         {trendValue}
                     </span>
@@ -91,16 +78,16 @@ export default function StatCard({
 
             <div className="flex items-end justify-between">
                 <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-1">{value}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+                    <h3 className="text-2xl font-bold mb-1">{value}</h3>
+                    <p className="text-sm text-[#71717A] font-light">{label}</p>
                     {subtitle && (
-                        <p className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-dark-border">
+                        <p className="text-xs text-[#71717A]/70 mt-2 pt-2 border-t border-black/5 dark:border-white/5 font-light">
                             {subtitle}
                         </p>
                     )}
                 </div>
 
-                {/* Mini Sparkline */}
+                {/* Mini Sparkline - Black/White theme */}
                 {chartData && chartData.length > 0 && (
                     <div className="w-20 h-12 ml-4">
                         <ResponsiveContainer width="100%" height="100%">
@@ -108,7 +95,7 @@ export default function StatCard({
                                 <Line
                                     type="monotone"
                                     dataKey="value"
-                                    stroke={colors[color].line}
+                                    stroke={currentColor.line}
                                     strokeWidth={2}
                                     dot={false}
                                 />
@@ -118,17 +105,15 @@ export default function StatCard({
                 )}
             </div>
 
-            {/* Progress indicator for goals */}
+            {/* Progress indicator - Portfolio Style */}
             {typeof value === 'string' && value.includes('/') && (
                 <div className="mt-3">
-                    <div className="h-1.5 bg-slate-100 dark:bg-dark-border rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${parseProgress(value)}%` }}
                             transition={{ duration: 0.8, ease: "easeOut" }}
-                            className={`h-full rounded-full ${parseProgress(value) >= 80 ? 'bg-green-500' :
-                                    parseProgress(value) >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                                }`}
+                            className="h-full rounded-full bg-black dark:bg-white"
                         />
                     </div>
                 </div>

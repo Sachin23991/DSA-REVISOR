@@ -14,6 +14,7 @@ const Analytics = lazy(() => import('./pages/Analytics'));
 const NotesAI = lazy(() => import('./pages/NotesAI'));
 const Notepad = lazy(() => import('./pages/Notepad'));
 const QuizPage = lazy(() => import('./pages/QuizPage'));
+const PYQPage = lazy(() => import('./pages/PYQPage'));
 
 // Loading spinner component
 function LoadingSpinner() {
@@ -72,6 +73,7 @@ function App() {
                             <Route path="notepad" element={<PageLoader><Notepad /></PageLoader>} />
                             <Route path="notes" element={<PageLoader><NotesAI /></PageLoader>} />
                             <Route path="quiz" element={<PageLoader><QuizPage /></PageLoader>} />
+                            <Route path="pyq" element={<PageLoader><PYQPage /></PageLoader>} />
                         </Route>
 
                         <Route path="*" element={<Navigate to="/" />} />

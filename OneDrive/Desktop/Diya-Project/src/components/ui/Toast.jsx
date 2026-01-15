@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, X, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Toast context for global access
 let toastQueue = [];
@@ -41,25 +42,28 @@ function ToastItem({ toast: { id, type, message }, onRemove }) {
     };
 
     const colors = {
-        success: 'bg-emerald-500 text-white',
-        error: 'bg-red-500 text-white',
-        warning: 'bg-amber-500 text-white',
-        info: 'bg-royal-500 text-white',
+        success: 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white',
+        error: 'bg-red-500 text-white border-red-500',
+        warning: 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white',
+        info: 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white',
     };
 
     return (
-        <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg ${colors[type]} animate-slide-in-right`}
+        <motion.div
+            initial={{ opacity: 0, x: 100, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 100, scale: 0.9 }}
+            className={`flex items-center gap-3 px-4 py-3 rounded shadow-lg border ${colors[type]}`}
         >
             {icons[type]}
             <span className="font-medium">{message}</span>
             <button
                 onClick={() => onRemove(id)}
-                className="ml-2 p-1 hover:bg-white/20 rounded-lg transition-colors"
+                className="ml-2 p-1 hover:bg-white/20 dark:hover:bg-black/20 rounded transition-colors"
             >
                 <X className="w-4 h-4" />
             </button>
-        </div>
+        </motion.div>
     );
 }
 
@@ -75,14 +79,16 @@ export function ToastContainer() {
         };
     }, []);
 
-    if (toasts.length === 0) return null;
-
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
-            {toasts.map(t => (
-                <ToastItem key={t.id} toast={t} onRemove={removeToast} />
-            ))}
-        </div>
+        <AnimatePresence>
+            {toasts.length > 0 && (
+                <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+                    {toasts.map(t => (
+                        <ToastItem key={t.id} toast={t} onRemove={removeToast} />
+                    ))}
+                </div>
+            )}
+        </AnimatePresence>
     );
 }
 

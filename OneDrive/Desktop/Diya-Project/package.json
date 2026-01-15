@@ -12,7 +12,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@react-three/drei": "^9.88.0",
-    "@react-three/fiber": "^8.15.0",
+    "@react-three/fiber": "^8.18.0",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
     "firebase": "^10.0.0",

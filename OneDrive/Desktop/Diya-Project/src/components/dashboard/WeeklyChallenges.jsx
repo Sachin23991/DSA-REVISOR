@@ -39,8 +39,8 @@ export default function WeeklyChallenges({ logs, stats }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={`card p-6 overflow-hidden relative ${isCompleted
-                    ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-emerald-200 dark:border-emerald-800'
-                    : ''
+                ? 'bg-[#FAFAFA] dark:bg-dark-surface'
+                : ''
                 }`}
         >
             {/* Completion confetti effect */}
@@ -53,34 +53,31 @@ export default function WeeklyChallenges({ logs, stats }) {
 
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                    <Swords className={`w-5 h-5 ${isCompleted ? 'text-emerald-500' : 'text-royal-500'}`} />
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">Weekly Challenge</h3>
+                    <Swords className="w-5 h-5" />
+                    <h3 className="text-lg font-medium">Weekly <span className="font-bold">Challenge</span></h3>
                 </div>
                 {isCompleted ? (
-                    <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">
+                    <span className="flex items-center gap-1 text-xs font-medium bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded">
                         <CheckCircle className="w-3 h-3" />
                         Completed!
                     </span>
                 ) : (
-                    <span className="flex items-center gap-1 text-xs text-slate-400">
+                    <span className="flex items-center gap-1 text-xs text-[#71717A] font-light">
                         <Clock className="w-3 h-3" />
                         {daysLeftInWeek} days left
                     </span>
                 )}
             </div>
 
-            {/* Challenge Card */}
-            <div className={`rounded-xl p-4 ${isCompleted
-                    ? 'bg-white/50 dark:bg-dark-surface/50'
-                    : 'bg-slate-50 dark:bg-dark-bg'
-                }`}>
+            {/* Challenge Card - Portfolio Style */}
+            <div className="rounded border border-black/5 dark:border-white/5 p-4 bg-white dark:bg-dark-bg">
                 <div className="flex items-start gap-4">
                     <span className="text-4xl">{challenge.icon}</span>
                     <div className="flex-1">
-                        <p className="font-bold text-slate-800 dark:text-white text-lg">
+                        <p className="font-bold text-lg">
                             {challenge.name}
                         </p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        <p className="text-sm text-[#71717A] mt-1 font-light">
                             This week's challenge
                         </p>
                     </div>
@@ -89,28 +86,23 @@ export default function WeeklyChallenges({ logs, stats }) {
                 {/* Progress */}
                 <div className="mt-4">
                     <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-600 dark:text-slate-300">
+                        <span>
                             <span className="font-bold text-lg">
                                 {typeof progress === 'number' ? progress.toFixed(1) : progress}
                             </span>
-                            <span className="text-slate-400"> / {challenge.target} {challenge.unit}</span>
+                            <span className="text-[#71717A] font-light"> / {challenge.target} {challenge.unit}</span>
                         </span>
-                        <span className={`font-bold ${progressPercent >= 100 ? 'text-emerald-500' :
-                                progressPercent >= 70 ? 'text-yellow-500' : 'text-slate-400'
-                            }`}>
+                        <span className="font-bold">
                             {Math.round(progressPercent)}%
                         </span>
                     </div>
 
-                    <div className="h-3 bg-slate-200 dark:bg-dark-border rounded-full overflow-hidden">
+                    <div className="h-3 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${progressPercent}%` }}
                             transition={{ duration: 1, ease: "easeOut" }}
-                            className={`h-full rounded-full ${isCompleted
-                                    ? 'bg-gradient-to-r from-emerald-400 to-green-500'
-                                    : 'bg-gradient-to-r from-royal-500 to-gold-500'
-                                }`}
+                            className="h-full rounded-full bg-black dark:bg-white"
                         />
                     </div>
                 </div>
@@ -119,7 +111,7 @@ export default function WeeklyChallenges({ logs, stats }) {
                 {!isCompleted && (
                     <motion.button
                         whileHover={{ x: 5 }}
-                        className="mt-4 text-sm font-medium text-royal-600 dark:text-royal-400 flex items-center gap-1"
+                        className="mt-4 text-sm font-medium flex items-center gap-1 hover:underline"
                     >
                         Keep going! <ChevronRight className="w-4 h-4" />
                     </motion.button>
@@ -128,8 +120,8 @@ export default function WeeklyChallenges({ logs, stats }) {
 
             {/* Reward teaser */}
             <div className="mt-4 text-center">
-                <p className="text-xs text-slate-400">
-                    Complete to earn: <span className="font-bold text-gold-500">🏆 Challenge Master Badge</span>
+                <p className="text-xs text-[#71717A] font-light">
+                    Complete to earn: <span className="font-bold">🏆 Challenge Master Badge</span>
                 </p>
             </div>
         </motion.div>
