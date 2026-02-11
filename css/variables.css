@@ -1,0 +1,121 @@
+/* ═══════════════════════════════════════════════════════
+   CSS VARIABLES — All themes + custom properties
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Dark Theme (Default) — Black & White Combination ── */
+:root,
+[data-theme="dark"] {
+    /* Background Layers — Pure Black/Gray tones */
+    --bg-primary: #0d0d0d;
+    --bg-secondary: #141414;
+    --bg-elevated: #1a1a1a;
+    --bg-card: rgba(22, 22, 22, 0.9);
+    --bg-card-hover: rgba(32, 32, 32, 0.95);
+    --bg-glass: rgba(18, 18, 18, 0.65);
+    --bg-sidebar: rgba(12, 12, 12, 0.97);
+    --bg-input: rgba(26, 26, 26, 0.85);
+    --bg-modal-overlay: rgba(0, 0, 0, 0.7);
+    --bg-tertiary: #222222;
+
+    /* Accent Colors — Kept for interactive highlights */
+    --accent: #7c6aff;
+    --accent-glow: rgba(124, 106, 255, 0.3);
+    --accent-soft: rgba(124, 106, 255, 0.1);
+    --accent-gradient: linear-gradient(135deg, #7c6aff 0%, #5b8cff 50%, #38d9a9 100%);
+    --accent-gradient-btn: linear-gradient(135deg, #7c6aff, #5b8cff);
+    --accent-gradient-warm: linear-gradient(135deg, #f6ad55, #f56565);
+
+    /* Text — High contrast white/gray */
+    --text-primary: #f0f0f0;
+    --text-secondary: #a0a0a0;
+    --text-muted: #606060;
+    --text-accent: #a29bfe;
+    --text-on-accent: #ffffff;
+
+    /* Borders — Subtle white lines */
+    --border: rgba(255, 255, 255, 0.08);
+    --border-light: rgba(255, 255, 255, 0.12);
+    --border-accent: rgba(124, 106, 255, 0.25);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.04);
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+
+    /* Status Colors */
+    --success: #38d9a9;
+    --success-bg: rgba(56, 217, 169, 0.12);
+    --warning: #f6ad55;
+    --warning-bg: rgba(246, 173, 85, 0.12);
+    --danger: #ff6b6b;
+    --danger-bg: rgba(255, 107, 107, 0.12);
+    --info: #63b3ed;
+    --info-bg: rgba(99, 179, 237, 0.12);
+
+    /* Misc */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --sidebar-width: 260px;
+    --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* Glassmorphism */
+    --glass-blur: blur(16px);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.06);
+
+    /* Heatmap Colors */
+    --hm-0: rgba(255, 255, 255, 0.04);
+    --hm-1: rgba(124, 106, 255, 0.2);
+    --hm-2: rgba(124, 106, 255, 0.4);
+    --hm-3: rgba(124, 106, 255, 0.65);
+    --hm-4: rgba(124, 106, 255, 0.9);
+}
+
+/* ── Obsidian Theme (Light) ── */
+[data-theme="obsidian"] {
+    --bg-primary: #f5f5f7;
+    --bg-secondary: #ecedf0;
+    --bg-elevated: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-card-hover: rgba(255, 255, 255, 1);
+    --bg-glass: rgba(255, 255, 255, 0.65);
+    --bg-sidebar: rgba(245, 245, 247, 0.95);
+    --bg-input: rgba(240, 241, 245, 0.9);
+    --bg-modal-overlay: rgba(0, 0, 0, 0.4);
+    --bg-tertiary: #e8e9ec;
+
+    --accent: #6c63ff;
+    --accent-glow: rgba(108, 99, 255, 0.2);
+    --accent-soft: rgba(108, 99, 255, 0.08);
+    --accent-gradient: linear-gradient(135deg, #6c63ff 0%, #5b8cff 50%, #38d9a9 100%);
+    --accent-gradient-btn: linear-gradient(135deg, #6c63ff, #5b8cff);
+
+    --text-primary: #1a1a2e;
+    --text-secondary: #555770;
+    --text-muted: #8e90a6;
+    --text-accent: #6c63ff;
+
+    --border: rgba(0, 0, 0, 0.06);
+    --border-light: rgba(0, 0, 0, 0.1);
+    --border-accent: rgba(108, 99, 255, 0.2);
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.12);
+    --shadow-glow: 0 0 25px rgba(108, 99, 255, 0.1);
+    --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+    --glass-blur: blur(12px);
+    --glass-border: 1px solid rgba(0, 0, 0, 0.06);
+
+    --hm-0: rgba(108, 99, 255, 0.05);
+    --hm-1: rgba(108, 99, 255, 0.15);
+    --hm-2: rgba(108, 99, 255, 0.3);
+    --hm-3: rgba(108, 99, 255, 0.5);
+    --hm-4: rgba(108, 99, 255, 0.75);
+}
