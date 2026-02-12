@@ -226,22 +226,33 @@ DSA.App = (() => {
 
     function handleQuestionSubmit(e) {
         e.preventDefault();
+        const startTime = performance.now();
+        console.log('Form submitted - attempting to save question...');
 
-        const editId = document.getElementById('edit-question-id').value;
-        const questionData = {
-            name: document.getElementById('q-name').value.trim(),
-            platform: document.getElementById('q-platform').value,
-            platformLink: document.getElementById('q-link').value.trim(),
-            subject: document.getElementById('q-subject').value.trim(),
-            difficulty: document.getElementById('q-difficulty').value,
-            dateSolved: document.getElementById('q-date').value,
-            timeTaken: parseInt(document.getElementById('q-time').value) || 0,
-            tags: document.getElementById('q-tags').value.split(',').map(t => t.trim()).filter(Boolean),
-            notes: document.getElementById('q-notes').value.trim(),
-            importantNote: document.getElementById('q-important-note').value.trim(),
-            status: document.getElementById('q-status').value,
-            initialConfidence: parseInt(document.getElementById('q-confidence').value) || 4
-        };
+        // Add loading state
+        const submitBtn = document.getElementById('form-submit-btn');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        try {
+            const dataCollectStart = performance.now();
+            const editId = document.getElementById('edit-question-id').value;
+            const questionData = {
+                name: document.getElementById('q-name').value.trim(),
+                platform: document.getElementById('q-platform').value,
+                platformLink: document.getElementById('q-link').value.trim(),
+                subject: document.getElementById('q-subject').value.trim(),
+                difficulty: document.getElementById('q-difficulty').value,
+                dateSolved: document.getElementById('q-date').value,
+                timeTaken: parseInt(document.getElementById('q-time').value) || 0,
+                tags: document.getElementById('q-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+                notes: document.getElementById('q-notes').value.trim(),
+                importantNote: document.getElementById('q-important-note').value.trim(),
+                status: document.getElementById('q-status').value,
+                initialConfidence: parseInt(document.getElementById('q-confidence').value) || 4
+            };
+            console.log(`⏱️ Data collection: ${(performance.now() - dataCollectStart).toFixed(2)}ms`);
 
         if (editId) {
             // Update existing
@@ -251,7 +262,9 @@ DSA.App = (() => {
             document.getElementById('form-submit-btn').textContent = 'Save Topic';
             document.getElementById('form-back-btn').style.display = 'none';
         } else {
-            // Add new
+            // AddaddStart = performance.now();
+            const q = DSA.Store.addQuestion(questionData);
+            console.log(`⏱️ Store.addQuestion: ${(performance.now() - addStart).toFixed(2)}ms`
             const q = DSA.Store.addQuestion(questionData);
 
             // XP for adding question
@@ -266,6 +279,7 @@ DSA.App = (() => {
 
             // Check badges
             DSA.Gamification.checkBadges();
+            console.log(`⏱️ Total add operation: ${(performance.now() - addStart).toFixed(2)}ms`);
 
             showToast(`"${q.name}" added! +${xp} XP`, 'success');
         }
@@ -280,8 +294,33 @@ DSA.App = (() => {
 
         // Update sidebar XP
         updateSidebarXP();
-        populateFilterOptions();
-        populateSubjectSuggestions();
+        
+        // Defer expensive UI updates to next tick (non-blocking)
+        setTimeout(() => {
+            populateFilterOptions();
+            populateSubjectSuggestions();
+            
+            // Navigate to "All Questions" view to show the saved question
+            if (!editId) {  // Only navigate for new questions, not edits
+                setTimeout(() => {
+                    switchView('questions');
+                }, 300);  // Small delay to show the toast message first
+            }
+        }, 0);
+
+        // Re-enable button
+        submitBtn.disabled = false;
+        
+        const totalTime = (performance.now() - startTime).toFixed(2);
+        console.log(`⏱️ TOTAL SUBMIT TIME: ${totalTime}ms`);
+        submitBtn.textContent = originalText;
+        } catch (error) {
+            console.error('Error submitting question:', error);
+            showToast('Failed to save question. Check console for details.', 'error');
+            // Re-enable button on error
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
     }
 
     // ════════════ QUESTIONS LIST ════════════

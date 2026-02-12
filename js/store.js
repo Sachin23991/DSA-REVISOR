@@ -32,11 +32,14 @@ DSA.Store = (() => {
     }
 
     function firestoreSet(collection, docId, data) {
-        const firestore = getFirestore();
-        if (!firestore) return;
-        firestore.collection(collection).doc(docId).set(data, { merge: true })
-            .then(() => console.log(`☁️ Synced → ${collection}/${docId}`))
-            .catch(err => console.warn(`☁️ Firestore write failed (${collection}/${docId}):`, err));
+        // Defer to next tick to prevent blocking UI
+        setTimeout(() => {
+            const firestore = getFirestore();
+            if (!firestore) return;
+            firestore.collection(collection).doc(docId).set(data, { merge: true })
+                .then(() => console.log(`☁️ Synced → ${collection}/${docId}`))
+                .catch(err => console.warn(`☁️ Firestore write failed (${collection}/${docId}):`, err));
+        }, 0);
     }
 
     function firestoreDelete(collection, docId) {
@@ -170,7 +173,7 @@ DSA.Store = (() => {
         questions.push(question);
         saveQuestions(questions);
 
-        // ☁️ Sync to Firestore
+        // ☁️ Sync to Firestore (deferred, non-blocking)
         firestoreSet(FS_COLLECTIONS.QUESTIONS, question.id, question);
 
         addActivity('add', `Added "${question.name}" (${question.subject})`);
