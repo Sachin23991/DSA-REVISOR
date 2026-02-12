@@ -1826,6 +1826,21 @@
     border-left: 3px solid var(--accent);
 }
 
+.syllabus-topics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.syllabus-topics-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 .syllabus-topics-list {
     display: flex;
     flex-direction: column;
@@ -1839,10 +1854,16 @@
     padding: 8px 10px;
     border-radius: var(--radius-md);
     transition: background 0.15s;
+    position: relative;
 }
 
 .syllabus-topic-item:hover {
     background: var(--bg-elevated);
+}
+
+.syllabus-topic-item:hover .syl-topic-delete {
+    opacity: 1;
+    visibility: visible;
 }
 
 .syllabus-topic-item.completed .syl-topic-name {
@@ -1886,6 +1907,34 @@
 .syl-topic-date {
     font-size: 0.72rem;
     color: var(--text-muted);
+}
+
+.syl-topic-delete {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: var(--danger-bg);
+    color: var(--danger);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all var(--transition-fast);
+    opacity: 0;
+    visibility: hidden;
+    flex-shrink: 0;
+}
+
+.syl-topic-delete:hover {
+    background: var(--danger);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.syl-topic-delete:active {
+    transform: scale(0.95);
 }
 
 /* Syllabus Progress Overview */
@@ -1988,5 +2037,184 @@
     }
     .syllabus-stream-grid {
         grid-template-columns: 1fr;
+    }
+}
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE VIEW OPTIMIZATIONS
+   ═══════════════════════════════════════════════════════ */
+
+/* Prevent layout shifts */
+.question-item,
+.revision-item,
+.stat-card,
+.chart-card,
+.growth-card {
+    contain: layout style paint;
+    will-change: transform;
+}
+
+/* Better overflow handling for content */
+.question-item .q-name,
+.revision-item .rev-name,
+.growth-list-item,
+.activity-item .activity-text {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+    max-width: 100%;
+}
+
+/* Ensure images in cards don't overflow */
+.stat-card img,
+.chart-card img,
+.growth-card img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Better table responsiveness hint */
+@media (max-width: 900px) {
+    .mastery-table-container {
+        position: relative;
+    }
+    
+    .mastery-table-container::after {
+        content: '← Scroll →';
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        padding: 4px 8px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 0.7rem;
+        border-radius: 4px;
+        pointer-events: none;
+        opacity: 0.8;
+        animation: pulse 2s ease-in-out infinite;
+    }
+}
+
+/* Better grid spacing on mobile */
+@media (max-width: 600px) {
+    .analytics-grid,
+    .growth-grid {
+        gap: 14px;
+    }
+    
+    /* Visual priority indicators on mobile */
+    .question-item,
+    .revision-item {
+        border-left: 3px solid transparent;
+        transition: border-color var(--transition-fast);
+    }
+    
+    .question-item:active,
+    .revision-item:active {
+        background: var(--bg-elevated);
+    }
+}
+
+/* Better text readability */
+@media (max-width: 400px) {
+    .q-meta,
+    .rev-meta {
+        line-height: 1.5;
+    }
+}
+
+/* Accessibility: Focus visible for keyboard navigation */
+.question-item:focus-visible,
+.revision-item:focus-visible,
+.btn:focus-visible,
+.nav-links li:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}/* ═══════════════════════════════════════════════════════
+   SYLLABUS RESPONSIVE ENHANCEMENTS
+   Add/Delete Topic Buttons Mobile Optimization
+   ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+    .syllabus-topics-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .syllabus-topics-header .btn {
+        width: 100%;
+    }
+    
+    .syllabus-card-header {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 600px) {
+    .syllabus-topic-item {
+        padding: 10px 8px;
+    }
+    
+    /* Always show delete button on mobile for better UX */
+    .syl-topic-delete {
+        opacity: 1;
+        visibility: visible;
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        font-size: 0.9rem;
+    }
+    
+    .syllabus-topics-header {
+        padding: 6px 0;
+    }
+    
+    .syllabus-topics-title {
+        font-size: 0.85rem;
+    }
+    
+    .syl-topic-name {
+        font-size: 0.84rem;
+    }
+    
+    .syl-checkbox {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
+    }
+}
+
+@media (max-width: 400px) {
+    .syllabus-card {
+        padding: 16px 14px;
+    }
+    
+    .syllabus-topic-item {
+        gap: 8px;
+        padding: 8px 6px;
+    }
+    
+    .syl-topic-name {
+        font-size: 0.8rem;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .syl-topic-delete,
+    .syl-checkbox {
+        cursor: default;
+    }
+    
+    .syl-topic-delete:active {
+        transform: scale(0.9);
+        background: var(--danger);
+        color: #fff;
+    }
+    
+    .syl-checkbox:active {
+        transform: scale(0.9);
     }
 }

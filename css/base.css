@@ -180,6 +180,8 @@ html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 body {
@@ -188,6 +190,8 @@ body {
     color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
     line-height: 1.6;
     position: relative;
 }

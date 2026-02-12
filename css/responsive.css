@@ -1,5 +1,35 @@
 /* ═══════════════════════════════════════════════════════
    RESPONSIVE DESIGN — All breakpoints consolidated
+   
+   COMPREHENSIVE MOBILE-FIRST RESPONSIVE SYSTEM
+   
+   BREAKPOINTS:
+   - Large Desktop: 1600px+    (7-column badges, 6-column stats)
+   - Desktop: 1200-1599px      (6-column badges, analytics 2-col)
+   - Medium Desktop: 901-1199px (5-column badges, 3-column stats)
+   - Tablet: max 900px          (Sidebar off-canvas, mobile menu)
+   - Mobile: max 600px          (2-column layouts, touch-optimized)
+   - Small Mobile: max 400px    (Single column, ultra-compact)
+   
+   FEATURES IMPLEMENTED:
+   ✓ Off-canvas sidebar with overlay
+   ✓ Responsive top bar with collapsing elements
+   ✓ Flexible grid layouts (stats, badges, analytics, growth)
+   ✓ Stacked forms and modals on small screens
+   ✓ Touch-friendly button sizes (44px min height)
+   ✓ Horizontal scrolling tables with visual indicators
+   ✓ Optimized typography scaling
+   ✓ Better tap targets and feedback
+   ✓ iOS Safe Area support
+   ✓ Landscape orientation handling
+   ✓ Foldable device support
+   ✓ High contrast mode support
+   ✓ Reduced motion support
+   ✓ Prevent zoom on input focus (16px min font-size)
+   ✓ Performance optimizations for mobile
+   ✓ Better overflow handling
+   ✓ Accessibility enhancements
+   
    ═══════════════════════════════════════════════════════ */
 
 /* ── Large Desktop (min 1600px) ── */
@@ -8,6 +38,14 @@
         grid-template-columns: repeat(7, 1fr);
         gap: 12px;
     }
+
+    .stats-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+
+    .analytics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 /* ── Desktop (1200px - 1599px) ── */
@@ -15,12 +53,24 @@
     .badges-grid {
         grid-template-columns: repeat(6, 1fr);
     }
+
+    .analytics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* ── Medium Desktop (900px - 1199px) ── */
 @media (min-width: 901px) and (max-width: 1199px) {
     .badges-grid {
         grid-template-columns: repeat(5, 1fr);
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .analytics-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -30,6 +80,7 @@
     #sidebar {
         transform: translateX(-100%);
         box-shadow: 10px 0 40px rgba(0, 0, 0, 0.6);
+        z-index: 100;
     }
 
     #sidebar.open {
@@ -40,6 +91,7 @@
     /* Main content full-width */
     #main-content {
         margin-left: 0;
+        width: 100%;
     }
 
     /* Show menu button */
@@ -47,40 +99,180 @@
         display: flex;
     }
 
+    /* Top bar improvements */
     .top-bar {
         padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
+    .top-bar-info {
+        flex: 0 0 100%;
+        order: 2;
+        margin-top: 8px;
+    }
+
+    .top-bar-info .greeting {
+        font-size: 1rem;
+    }
+
+    .top-bar-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* Views */
     .view {
         padding: 20px 16px;
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    .view-title {
+        font-size: 1.4rem;
+        margin-bottom: 20px;
     }
 
+    /* Stats grid */
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+
+    /* Analytics */
     .analytics-grid {
         grid-template-columns: 1fr;
     }
 
+    .chart-card {
+        padding: 20px;
+    }
+
+    /* Forms */
     .form-grid {
         grid-template-columns: 1fr;
     }
 
-    .profile-stats {
-        grid-template-columns: repeat(3, 1fr);
+    .form-card {
+        padding: 24px;
     }
 
-    .settings-card .setting-item {
-        padding: 14px 0;
+    /* Question items - better mobile layout */
+    .question-item {
+        padding: 16px 18px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .question-item .q-name {
+        font-size: 0.92rem;
+    }
+
+    .question-item .q-meta {
+        font-size: 0.75rem;
+        gap: 8px;
+    }
+
+    .question-item .q-actions {
+        width: 100%;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    /* Revision items */
+    .revision-item {
+        padding: 14px 16px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .revision-item .rev-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    /* Tables - enable horizontal scroll */
+    .mastery-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .mastery-table {
+        min-width: 600px;
+    }
+
+    .mastery-table th,
+    .mastery-table td {
+        padding: 10px 12px;
+        font-size: 0.82rem;
+    }
+
+    /* Profile */
+    .profile-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
     }
 
     .profile-grid {
         grid-template-columns: 1fr;
     }
 
+    /* Settings */
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-card .setting-item {
+        padding: 14px 0;
+    }
+
+    /* Badges */
     .badges-grid {
         grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+
+    /* Growth cards */
+    .growth-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    /* Dashboard sections */
+    .dashboard-section {
+        margin-bottom: 24px;
+    }
+
+    .section-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .section-header h2 {
+        font-size: 1rem;
+    }
+
+    /* Heatmap */
+    .heatmap-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .heatmap-grid {
+        min-width: 600px;
+    }
+
+    /* Filters */
+    .filters-bar {
+        padding: 14px 16px;
+        gap: 10px;
+    }
+
+    /* Modal improvements */
+    .modal {
+        max-width: 90%;
+        padding: 28px;
+    }
+
+    .modal.modal-lg {
+        max-width: 90%;
     }
 }
 
@@ -90,29 +282,203 @@
         --sidebar-width: 240px;
     }
 
+    /* Top bar mobile optimization */
     .top-bar {
         padding: 10px 12px;
+        gap: 6px;
     }
 
+    .top-bar-info .greeting {
+        font-size: 0.95rem;
+    }
+
+    .top-bar-info .date-display {
+        font-size: 0.7rem;
+    }
+
+    .top-bar-actions .btn {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .top-bar-actions .btn-accent span {
+        display: none;
+    }
+
+    .top-bar-actions .btn-accent::before {
+        content: '+';
+        font-size: 1.1rem;
+    }
+
+    .theme-toggle {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    #theme-label {
+        display: none;
+    }
+
+    .notification-bell {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    /* Views */
     .view {
         padding: 16px 12px;
     }
 
+    .view-title {
+        font-size: 1.35rem;
+        margin-bottom: 18px;
+    }
+
+    /* Stats grid - 2 columns on mobile */
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
 
     .stat-card {
-        padding: 16px;
+        padding: 14px 12px;
+        gap: 10px;
+    }
+
+    .stat-card .stat-icon {
+        font-size: 1.6rem;
     }
 
     .stat-card .stat-value {
-        font-size: 1.4rem;
+        font-size: 1.3rem;
     }
 
+    .stat-card .stat-label {
+        font-size: 0.7rem;
+    }
+
+    /* Question items - stacked layout */
+    .question-item {
+        padding: 14px 16px;
+        gap: 10px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .question-item:hover {
+        transform: translateX(0);
+    }
+
+    .question-item .q-info {
+        width: 100%;
+    }
+
+    .question-item .q-name {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .question-item .q-meta {
+        font-size: 0.72rem;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .question-item .q-actions {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .question-item .q-actions .btn {
+        flex: 1;
+        min-width: calc(50% - 3px);
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    /* Questions summary */
+    .questions-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 0;
+        font-size: 0.82rem;
+    }
+
+    .bulk-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    /* Revision items */
+    .revision-item {
+        padding: 12px 14px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .revision-item .rev-info {
+        width: 100%;
+    }
+
+    .revision-item .rev-name {
+        font-size: 0.88rem;
+    }
+
+    .revision-item .rev-meta {
+        font-size: 0.72rem;
+    }
+
+    .revision-item .rev-actions {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+    }
+
+    .revision-item .rev-actions .btn {
+        flex: 1;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    /* Revision tabs */
+    .revision-tabs {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .rev-tab {
+        padding: 8px 12px;
+        font-size: 0.78rem;
+        flex: 1;
+        min-width: calc(50% - 3px);
+        justify-content: center;
+    }
+
+    .rev-tab .badge {
+        margin-left: 4px;
+        padding: 2px 6px;
+        font-size: 0.7rem;
+    }
+
+    /* Forms */
     .form-card {
-        padding: 20px;
+        padding: 18px 16px;
+    }
+
+    .form-group label {
+        font-size: 0.82rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 0.88rem;
+        padding: 10px 12px;
     }
 
     .form-row {
@@ -120,28 +486,142 @@
         gap: 12px;
     }
 
+    .form-row .form-group {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
     .form-actions {
         flex-direction: column;
+        gap: 8px;
     }
 
     .form-actions .btn {
         width: 100%;
+        justify-content: center;
     }
 
+    /* Filters bar */
     .filters-bar {
         flex-direction: column;
         gap: 8px;
+        padding: 12px 14px;
     }
 
     .filters-bar input,
     .filters-bar select {
         width: 100%;
+        min-width: 100%;
+        font-size: 0.82rem;
     }
 
+    /* Analytics & Charts */
+    .analytics-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .chart-card {
+        padding: 18px 16px;
+    }
+
+    .chart-card h3 {
+        font-size: 0.9rem;
+        margin-bottom: 12px;
+    }
+
+    .chart-wrapper {
+        height: 220px;
+    }
+
+    .chart-wrapper.chart-pie {
+        height: 250px;
+    }
+
+    /* Tables - responsive card view hint */
+    .mastery-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--radius-md);
+    }
+
+    .mastery-table {
+        min-width: 500px;
+        font-size: 0.8rem;
+    }
+
+    .mastery-table th {
+        padding: 10px 8px;
+        font-size: 0.7rem;
+    }
+
+    .mastery-table td {
+        padding: 10px 8px;
+        font-size: 0.78rem;
+    }
+
+    /* Growth grid */
     .growth-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
 
+    .growth-card {
+        padding: 20px 16px;
+    }
+
+    .growth-card-header h3 {
+        font-size: 0.95rem;
+    }
+
+    .growth-desc {
+        font-size: 0.82rem;
+    }
+
+    .growth-list-item {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    /* Profile */
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+    }
+
+    .profile-name {
+        font-size: 1.2rem;
+    }
+
+    .profile-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .p-stat {
+        padding: 12px 8px;
+    }
+
+    .p-stat-val {
+        font-size: 1.2rem;
+    }
+
+    .p-stat-lbl {
+        font-size: 0.7rem;
+    }
+
+    .profile-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* Badges */
     .badges-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
@@ -163,6 +643,7 @@
 
     .badge-item .badge-desc {
         font-size: 0.62rem;
+        display: none;
     }
 
     .badge-item .badge-status {
@@ -170,86 +651,185 @@
         padding: 2px 6px;
     }
 
+    /* Modals - full screen friendly */
+    .modal-overlay {
+        padding: 16px;
+        align-items: flex-start;
+        padding-top: 40px;
+    }
+
     .modal {
-        padding: 20px;
-        max-height: 90vh;
+        padding: 24px 18px;
+        max-height: 88vh;
+        max-width: 100%;
+    }
+
+    .modal.modal-lg,
+    .modal.modal-md {
+        max-width: 100%;
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
+        margin-bottom: 16px;
+        padding-right: 30px;
+    }
+
+    .modal .modal-close {
+        top: 14px;
+        right: 14px;
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+    }
+
+    .modal-body {
+        margin-bottom: 20px;
     }
 
     .modal-actions {
         flex-direction: column;
+        gap: 8px;
+        padding-top: 14px;
     }
 
     .modal-actions .btn {
         width: 100%;
+        justify-content: center;
     }
 
-    .profile-header {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .profile-stats {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-    }
-
-    .p-stat {
-        padding: 12px 6px;
-    }
-
-    .p-stat-val {
-        font-size: 1.2rem;
-    }
-
+    /* Quality rating in modal */
     .quality-rating {
         flex-wrap: wrap;
+        gap: 6px;
     }
 
     .quality-btn {
         min-width: 50px;
-        flex: 0 0 calc(20% - 6px);
+        flex: 0 0 calc(20% - 5px);
+        padding: 8px 4px;
     }
 
-    .heatmap-container {
-        padding: 12px;
+    .quality-btn .q-emoji {
+        font-size: 1.1rem;
     }
 
-    .toast-container {
-        left: 12px; right: 12px;
-        max-width: none;
+    .quality-btn .q-label {
+        font-size: 0.6rem;
     }
 
+    /* Settings */
     .settings-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .settings-card {
+        padding: 20px 16px;
+    }
+
+    .settings-card h3 {
+        font-size: 1rem;
+    }
+
+    .settings-card .setting-item {
+        padding: 12px 0;
     }
 
     .settings-card .setting-item input[type="number"],
     .settings-card .setting-item input[type="text"] {
-        font-size: 0.88rem;
+        font-size: 0.86rem;
     }
 
-    .streak-badge { display: none; }
-    .revision-tabs { flex-wrap: wrap; }
-
-    .analytics-grid {
-        grid-template-columns: 1fr;
+    .settings-card .btn {
+        width: 100%;
+        justify-content: center;
     }
 
-    .profile-grid {
-        grid-template-columns: 1fr;
-    }
-
+    /* Theme selector */
     .theme-selector {
         flex-direction: column;
+        gap: 12px;
     }
 
-    /* Mobile optimizations for new features */
+    .theme-option {
+        width: 100%;
+        padding: 14px;
+    }
+
+    /* Heatmap */
+    .heatmap-container {
+        padding: 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .heatmap-grid {
+        min-width: 500px;
+    }
+
+    .heatmap-cell {
+        width: 10px;
+        height: 10px;
+    }
+
+    .heatmap-legend {
+        font-size: 0.7rem;
+        margin-top: 10px;
+    }
+
+    /* Toast notifications */
+    .toast-container {
+        left: 12px;
+        right: 12px;
+        top: 16px;
+        max-width: none;
+    }
+
+    .toast {
+        padding: 12px 16px;
+        font-size: 0.82rem;
+    }
+
+    .toast .toast-icon {
+        font-size: 1rem;
+    }
+
+    /* Streak badge in top bar */
+    .streak-badge {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+
+    .streak-fire {
+        font-size: 0.9rem;
+    }
+
+    .streak-count {
+        font-size: 0.82rem;
+    }
+
+    /* Dashboard sections */
+    .dashboard-section {
+        margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+        font-size: 0.95rem;
+    }
+
+    /* Timer widget */
     .timer-widget {
         padding: 16px;
     }
 
+    .timer-label {
+        font-size: 0.82rem;
+    }
+
     .timer-display {
         font-size: 2rem;
+        margin: 12px 0;
     }
 
     .timer-controls {
@@ -262,66 +842,57 @@
         font-size: 1rem;
     }
 
-    .company-tags {
-        gap: 4px;
-    }
-
-    .company-tag {
-        padding: 4px 8px;
-        font-size: 0.7rem;
-    }
-
-    .topic-tags {
-        gap: 4px;
-    }
-
-    .topic-tag {
-        padding: 3px 8px;
-        font-size: 0.68rem;
-    }
-
+    /* Progress section */
     .progress-section {
-        margin: 16px 0;
+        margin: 14px 0;
     }
 
     .progress-item {
-        margin-bottom: 16px;
+        margin-bottom: 14px;
     }
 
     .progress-label {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
     }
 
     .progress-value {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
     }
 
+    .progress-bar {
+        height: 6px;
+    }
+
+    /* Difficulty distribution */
     .difficulty-distribution {
         gap: 8px;
+        grid-template-columns: repeat(3, 1fr);
     }
 
     .diff-stat {
-        padding: 12px;
+        padding: 12px 8px;
     }
 
     .diff-stat-value {
-        font-size: 1.6rem;
+        font-size: 1.5rem;
     }
 
     .diff-stat-label {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
     }
 
+    /* Study planner / Calendar */
     .study-planner {
-        padding: 16px;
+        padding: 16px 12px;
     }
 
     .calendar-header {
-        margin-bottom: 16px;
+        margin-bottom: 14px;
+        gap: 8px;
     }
 
     .calendar-month {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
 
     .calendar-nav-btn {
@@ -331,18 +902,30 @@
     }
 
     .calendar-grid {
-        gap: 4px;
+        gap: 3px;
     }
 
     .calendar-day-header {
-        font-size: 0.68rem;
+        font-size: 0.65rem;
         padding: 4px 0;
     }
 
     .calendar-day {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
+        padding: 6px 4px;
+        min-height: 40px;
     }
 
+    .calendar-day .day-number {
+        font-size: 0.8rem;
+    }
+
+    .calendar-day .day-indicator {
+        width: 4px;
+        height: 4px;
+    }
+
+    /* Goal tracker */
     .goal-tracker {
         padding: 16px;
     }
@@ -356,59 +939,796 @@
         font-size: 1rem;
     }
 
+    /* Code snippets */
     .code-snippet {
         padding: 12px;
     }
 
-    .code-content {
-        font-size: 0.75rem;
+    .code-header {
+        font-size: 0.8rem;
+        margin-bottom: 8px;
     }
 
+    .code-content {
+        font-size: 0.72rem;
+        line-height: 1.5;
+    }
+
+    /* Problem links */
     .problem-links {
         gap: 6px;
+        flex-wrap: wrap;
     }
 
     .problem-link {
         padding: 6px 10px;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
+        flex: 1;
+        min-width: calc(50% - 3px);
+        justify-content: center;
+    }
+
+    /* Tags */
+    .company-tags,
+    .topic-tags {
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .company-tag,
+    .topic-tag {
+        padding: 3px 8px;
+        font-size: 0.68rem;
+    }
+
+    .diff-tag {
+        padding: 3px 8px;
+        font-size: 0.68rem;
+    }
+
+    .q-stream-tag {
+        padding: 2px 6px;
+        font-size: 0.65rem;
     }
 
     .badge-pill {
         padding: 3px 8px;
         font-size: 0.65rem;
     }
+
+    /* Activity feed */
+    .activity-feed {
+        padding: 0;
+    }
+
+    .activity-item {
+        padding: 8px 0;
+        gap: 10px;
+    }
+
+    .activity-item .activity-icon {
+        font-size: 0.95rem;
+    }
+
+    .activity-item .activity-text {
+        font-size: 0.8rem;
+    }
+
+    .activity-item .activity-time {
+        font-size: 0.68rem;
+    }
+
+    /* Buttons - better touch targets */
+    .btn {
+        min-height: 40px;
+        padding: 10px 18px;
+    }
+
+    .btn-sm {
+        min-height: 36px;
+        padding: 8px 14px;
+    }
+
+    .btn-icon {
+        width: 40px;
+        height: 40px;
+        min-height: 40px;
+    }
+
+    /* Empty states */
+    .empty-state {
+        padding: 40px 20px;
+        font-size: 0.88rem;
+    }
+
+    .empty-state .empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+    }
+
+    /* Ensure no horizontal overflow */
+    body,
+    #main-content,
+    .view {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+
+    /* Better text wrapping */
+    .q-name,
+    .rev-name,
+    .modal-question-name {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
+    /* Hide streak badge in top bar on very small screens */
+    .top-bar .streak-badge {
+        display: none;
+    }
 }
 
 /* ── Extra Small Mobile (max 400px) ── */
 @media (max-width: 400px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
+    /* Ultra-compact layout */
+    .view-title {
+        font-size: 1.25rem;
+        margin-bottom: 16px;
     }
 
-    .view-title {
-        font-size: 1.3rem;
+    /* Single column stats */
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
     }
 
     .stat-card {
-        padding: 14px;
+        padding: 12px 14px;
+    }
+
+    .stat-card .stat-icon {
+        font-size: 1.5rem;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.2rem;
+    }
+
+    .stat-card .stat-label {
+        font-size: 0.68rem;
+    }
+
+    /* 2 column badges on very small screens */
+    .badges-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .badge-item {
+        padding: 8px 4px;
+        min-height: 90px;
+    }
+
+    .badge-item .badge-icon {
+        font-size: 1.6rem;
+    }
+
+    .badge-item .badge-name {
+        font-size: 0.68rem;
+    }
+
+    .badge-item .badge-status {
+        font-size: 0.58rem;
+    }
+
+    /* Timer */
+    .timer-display {
+        font-size: 1.8rem;
+        margin: 10px 0;
+    }
+
+    .timer-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 0.95rem;
+    }
+
+    /* Calendar - smaller grid */
+    .calendar-day {
+        font-size: 0.68rem;
+        padding: 4px 2px;
+        min-height: 36px;
+    }
+
+    .calendar-day .day-number {
+        font-size: 0.75rem;
+    }
+
+    .calendar-day-header {
+        font-size: 0.6rem;
+    }
+
+    /* Difficulty distribution - stack vertically */
+    .difficulty-distribution {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .diff-stat {
+        padding: 12px 16px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .diff-stat-value {
+        font-size: 1.4rem;
+    }
+
+    /* Top bar ultra-compact */
+    .top-bar-info .greeting {
+        font-size: 0.9rem;
+    }
+
+    .top-bar-actions .btn {
+        padding: 5px 8px;
+    }
+
+    .theme-toggle {
+        padding: 5px 8px;
+    }
+
+    .notification-bell {
+        width: 34px;
+        height: 34px;
+    }
+
+    /* Forms */
+    .form-card {
+        padding: 16px 14px;
+    }
+
+    .form-group label {
+        font-size: 0.78rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 0.85rem;
+        padding: 9px 11px;
+    }
+
+    .btn {
+        font-size: 0.82rem;
+        padding: 9px 16px;
+    }
+
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 7px 12px;
+    }
+
+    /* Modal ultra-compact */
+    .modal {
+        padding: 20px 16px;
+    }
+
+    .modal-title {
+        font-size: 1.05rem;
+    }
+
+    /* Quality rating - smaller on tiny screens */
+    .quality-btn {
+        flex: 0 0 calc(20% - 5px);
+        padding: 6px 3px;
+    }
+
+    .quality-btn .q-emoji {
+        font-size: 1rem;
+    }
+
+    .quality-btn .q-label {
+        font-size: 0.55rem;
+    }
+
+    /* Charts */
+    .chart-wrapper {
+        height: 200px;
+    }
+
+    .chart-wrapper.chart-pie {
+        height: 220px;
+    }
+
+    /* Tables */
+    .mastery-table {
+        min-width: 450px;
+        font-size: 0.75rem;
+    }
+
+    .mastery-table th,
+    .mastery-table td {
+        padding: 8px 6px;
+        font-size: 0.72rem;
+    }
+
+    /* Profile */
+    .profile-avatar {
+        width: 70px;
+        height: 70px;
+    }
+
+    .profile-name {
+        font-size: 1.1rem;
+    }
+
+    .profile-stats {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .p-stat {
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 10px 12px;
+    }
+
+    /* Revision tabs - full width */
+    .rev-tab {
+        min-width: 100%;
+        flex: 1 1 100%;
+    }
+
+    /* Section headers */
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .section-header h2 {
+        font-size: 0.9rem;
+    }
+
+    /* Dashboard sections */
+    .dashboard-section {
+        margin-bottom: 18px;
+    }
+
+    /* Heatmap */
+    .heatmap-grid {
+        min-width: 450px;
+    }
+
+    .heatmap-cell {
+        width: 8px;
+        height: 8px;
+    }
+
+    /* Settings */
+    .settings-card {
+        padding: 16px 14px;
+    }
+
+    .settings-card h3 {
+        font-size: 0.95rem;
+    }
+
+    /* Toast */
+    .toast {
+        padding: 10px 14px;
+        font-size: 0.78rem;
+    }
+
+    /* Question and revision items - even more compact */
+    .question-item {
+        padding: 12px 14px;
+    }
+
+    .question-item .q-name {
+        font-size: 0.86rem;
+    }
+
+    .question-item .q-meta {
+        font-size: 0.68rem;
+    }
+
+    .question-item .q-actions .btn {
+        font-size: 0.72rem;
+        padding: 5px 8px;
+    }
+
+    .revision-item {
+        padding: 10px 12px;
+    }
+
+    .revision-item .rev-name {
+        font-size: 0.84rem;
+    }
+
+    /* Activity feed */
+    .activity-item {
+        font-size: 0.76rem;
+    }
+
+    .activity-item .activity-icon {
+        font-size: 0.9rem;
+    }
+
+    /* Filters */
+    .filters-bar {
+        padding: 10px 12px;
+    }
+
+    .filters-bar input,
+    .filters-bar select {
+        font-size: 0.78rem;
+        padding: 8px 10px;
+    }
+
+    /* Growth cards */
+    .growth-card {
+        padding: 16px 14px;
+    }
+
+    .growth-card-header .growth-icon {
+        font-size: 1.3rem;
+    }
+
+    .growth-card-header h3 {
+        font-size: 0.9rem;
+    }
+}
+
+/* ── Landscape Mobile (max 600px height in landscape) ── */
+@media (max-height: 600px) and (orientation: landscape) {
+    .modal {
+        max-height: 95vh;
+        padding: 20px;
+    }
+
+    .modal-title {
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
+
+    .modal-body {
+        margin-bottom: 16px;
+    }
+
+    .chart-wrapper {
+        height: 180px;
+    }
+
+    .chart-wrapper.chart-pie {
+        height: 200px;
+    }
+
+    .view-title {
+        margin-bottom: 16px;
+    }
+
+    .dashboard-section {
+        margin-bottom: 16px;
+    }
+}
+
+/* ── Large Tablet Portrait (600px - 900px) ── */
+@media (min-width: 601px) and (max-width: 900px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
 
     .badges-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 
-    .timer-display {
-        font-size: 1.8rem;
+    .profile-stats {
+        grid-template-columns: repeat(3, 1fr);
     }
 
-    .calendar-day {
-        font-size: 0.7rem;
+    .quality-btn {
+        flex: 0 0 calc(20% - 6px);
     }
 
     .difficulty-distribution {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* ── Touch Device Optimizations ── */
+@media (hover: none) and (pointer: coarse) {
+    /* Better touch targets */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .btn-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .btn-sm {
+        min-height: 40px;
+    }
+
+    .nav-links li {
+        padding: 13px 16px;
+        min-height: 44px;
+    }
+
+    .quality-btn {
+        min-height: 44px;
+    }
+
+    .rev-tab {
+        min-height: 44px;
+    }
+
+    .calendar-day {
+        min-height: 44px;
+    }
+
+    /* Remove hover effects on touch devices */
+    .question-item:hover {
+        transform: none;
+    }
+
+    .stat-card:hover {
+        transform: none;
+    }
+
+    .chart-card:hover {
+        transform: none;
+    }
+
+    .growth-card:hover {
+        transform: none;
+    }
+
+    /* Tap highlight color */
+    * {
+        -webkit-tap-highlight-color: rgba(124, 106, 255, 0.2);
+    }
+
+    /* Better scrolling */
+    .modal,
+    .filters-bar,
+    .mastery-table-container,
+    .heatmap-container {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ── High Resolution Displays ── */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Sharper borders and shadows */
+    .stat-card,
+    .chart-card,
+    .form-card,
+    .question-item,
+    .revision-item {
+        border-width: 0.5px;
+    }
+
+    .modal {
+        border-width: 0.5px;
+    }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .stat-card:hover,
+    .question-item:hover,
+    .chart-card:hover,
+    .growth-card:hover {
+        transform: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ADDITIONAL MOBILE ENHANCEMENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* Smooth scrolling for mobile */
+@media (max-width: 900px) {
+    .view,
+    .modal,
+    .mastery-table-container,
+    .heatmap-container,
+    .filters-bar {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Better pull-to-refresh handling */
+    body {
+        overscroll-behavior-y: contain;
+    }
+    
+    /* Prevent accidental zooming */
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group input[type="date"],
+    .form-group select,
+    .form-group textarea {
+        touch-action: manipulation;
+    }
+}
+
+/* Mobile-specific interaction improvements */
+@media (max-width: 600px) {
+    /* Better tap feedback */
+    .btn:active,
+    .quality-btn:active,
+    .rev-tab:active {
+        transform: scale(0.96);
+        opacity: 0.9;
+    }
+    
+    .question-item:active,
+    .revision-item:active {
+        transform: scale(0.99);
+    }
+    
+    /* Prevent text selection on double tap */
+    .btn,
+    .quality-btn,
+    .nav-links li,
+    .rev-tab,
+    .calendar-day {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    
+    /* Better input focus on mobile */
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        transform: none;
+        box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    
+    /* Prevent layout shift on focus */
+    .form-group {
+        contain: layout;
+    }
+}
+
+/* iOS Safe Area Support */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+    
+    .top-bar {
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+    }
+    
+    #sidebar {
+        padding-left: env(safe-area-inset-left);
+    }
+    
+    .modal-overlay {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .toast-container {
+        left: max(12px, env(safe-area-inset-left));
+        right: max(12px, env(safe-area-inset-right));
+    }
+}
+
+/* Android Notch Support */
+@media (max-width: 900px) {
+    .top-bar {
+        padding-top: max(10px, env(safe-area-inset-top));
+    }
+}
+
+/* Better contrast for accessibility */
+@media (prefers-contrast: high) {
+    .stat-card,
+    .chart-card,
+    .question-item,
+    .revision-item,
+    .form-card,
+    .modal {
+        border-width: 2px;
+    }
+    
+    .btn {
+        border: 2px solid currentColor;
+    }
+    
+    .btn-primary,
+    .btn-accent {
+        border-color: transparent;
+    }
+}
+
+/* Dark mode specific mobile optimizations */
+@media (prefers-color-scheme: dark) and (max-width: 600px) {
+    /* Reduce bright colors on small screens in dark mode */
+    .stat-card,
+    .chart-card,
+    .form-card {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* Foldable device support */
+@media (min-width: 601px) and (max-width: 900px) and (orientation: landscape) {
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    
+    .view {
+        padding: 20px 24px;
+    }
+}
+
+/* Ultra-wide mobile (landscape) */
+@media (max-width: 900px) and (min-aspect-ratio: 16/9) {
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+    
+    .question-item,
+    .revision-item {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+/* Better visibility for small text on mobile */
+@media (max-width: 600px) {
+    /* Minimum font sizes for readability */
+    .stat-label,
+    .p-stat-lbl,
+    .badge-status,
+    .activity-time,
+    .heatmap-legend {
+        font-size: max(0.7rem, 11px);
+    }
+    
+    .q-meta,
+    .rev-meta,
+    .form-group label {
+        font-size: max(0.75rem, 12px);
+    }
+}
+
+/* Performance optimization for mobile */
+@media (max-width: 900px) {
+    /* Simplify animations on mobile for better performance */
+    .stat-card,
+    .chart-card,
+    .question-item,
+    .revision-item,
+    .growth-card {
+        will-change: auto;
+    }
+    
+    /* Reduce backdrop filter blur on mobile for performance */
+    .modal-overlay {
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+}
+
 
 /* ── Print Styles ── */
 @media print {

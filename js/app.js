@@ -1448,6 +1448,12 @@ DSA.App = (() => {
                         <span class="syllabus-progress-text">${completed}/${total} topics (${pct}%)</span>
                     </div>
                     ${syl.notes ? `<div class="syllabus-notes">📝 ${escapeHtml(syl.notes)}</div>` : ''}
+                    <div class="syllabus-topics-header">
+                        <span class="syllabus-topics-title">Topics & Chapters</span>
+                        <button class="btn btn-sm btn-accent" onclick="DSA.App.addSyllabusTopicPrompt('${syl.id}')" title="Add New Topic">
+                            ➕ Add Topic
+                        </button>
+                    </div>
                     <div class="syllabus-topics-list">
                         ${syl.topics.map((topic, idx) => `
                             <div class="syllabus-topic-item ${topic.completed ? 'completed' : ''}">
@@ -1457,6 +1463,9 @@ DSA.App = (() => {
                                 </button>
                                 <span class="syl-topic-name">${escapeHtml(topic.name)}</span>
                                 ${topic.completedDate ? `<span class="syl-topic-date">${topic.completedDate}</span>` : ''}
+                                <button class="syl-topic-delete" onclick="DSA.App.deleteSyllabusTopicConfirm('${syl.id}', ${idx})" title="Delete Topic">
+                                    🗑️
+                                </button>
                             </div>
                         `).join('')}
                     </div>
@@ -1539,6 +1548,34 @@ DSA.App = (() => {
         refreshSyllabus();
     }
 
+    function addSyllabusTopicPrompt(syllabusId) {
+        const topicName = prompt('Enter the topic/chapter name:');
+        if (!topicName || !topicName.trim()) {
+            showToast('Topic name cannot be empty.', 'error');
+            return;
+        }
+        
+        const result = DSA.Store.addSyllabusTopic(syllabusId, topicName.trim());
+        if (result) {
+            showToast(`Topic "${topicName}" added successfully!`, 'success');
+            refreshSyllabus();
+        } else {
+            showToast('Failed to add topic.', 'error');
+        }
+    }
+
+    function deleteSyllabusTopicConfirm(syllabusId, topicIndex) {
+        if (!confirm('Delete this topic? This cannot be undone.')) return;
+        
+        const result = DSA.Store.deleteSyllabusTopic(syllabusId, topicIndex);
+        if (result) {
+            showToast('Topic deleted successfully.', 'info');
+            refreshSyllabus();
+        } else {
+            showToast('Failed to delete topic.', 'error');
+        }
+    }
+
     // ════════════ PUBLIC API ════════════
     return {
         init,
@@ -1555,7 +1592,9 @@ DSA.App = (() => {
         refreshProfile,
         refreshSyllabus,
         toggleSyllabusTopic,
-        deleteSyllabus
+        deleteSyllabus,
+        addSyllabusTopicPrompt,
+        deleteSyllabusTopicConfirm
     };
 })();
 

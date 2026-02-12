@@ -402,6 +402,37 @@ DSA.Store = (() => {
         return syl;
     }
 
+    function addSyllabusTopic(syllabusId, topicName) {
+        const syllabi = getSyllabi();
+        const syl = syllabi.find(s => s.id === syllabusId);
+        if (!syl) return null;
+        
+        const newTopic = {
+            name: topicName,
+            completed: false,
+            completedDate: null
+        };
+        
+        syl.topics.push(newTopic);
+        syl.updatedAt = new Date().toISOString();
+        saveSyllabi(syllabi);
+        addActivity('add', `Added topic "${topicName}" to ${syl.name}`);
+        return syl;
+    }
+
+    function deleteSyllabusTopic(syllabusId, topicIndex) {
+        const syllabi = getSyllabi();
+        const syl = syllabi.find(s => s.id === syllabusId);
+        if (!syl || !syl.topics[topicIndex]) return null;
+        
+        const topicName = syl.topics[topicIndex].name;
+        syl.topics.splice(topicIndex, 1);
+        syl.updatedAt = new Date().toISOString();
+        saveSyllabi(syllabi);
+        addActivity('delete', `Removed topic "${topicName}" from ${syl.name}`);
+        return syl;
+    }
+
     // ── Helpers ──
     function generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
@@ -438,6 +469,8 @@ DSA.Store = (() => {
         updateSyllabus,
         deleteSyllabus,
         toggleSyllabusTopic,
+        addSyllabusTopic,
+        deleteSyllabusTopic,
         exportData,
         importData,
         resetAllData,

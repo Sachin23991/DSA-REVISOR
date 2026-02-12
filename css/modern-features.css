@@ -729,6 +729,30 @@ button:focus {
 }
 
 /* ══════════ RESPONSIVE ADJUSTMENTS ══════════ */
+@media (max-width: 900px) {
+    .study-planner {
+        padding: 20px 16px;
+    }
+    
+    .calendar-header {
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .calendar-controls {
+        gap: 8px;
+    }
+    
+    .timer-widget {
+        padding: 20px;
+    }
+    
+    .company-tags,
+    .topic-tags {
+        gap: 6px;
+    }
+}
+
 @media (max-width: 768px) {
     .timer-display {
         font-size: 2.2rem;
@@ -749,6 +773,8 @@ button:focus {
 
     .calendar-day {
         font-size: 0.75rem;
+        min-height: 44px;
+        touch-action: manipulation;
     }
 
     .company-tags,
@@ -759,5 +785,99 @@ button:focus {
     .goal-progress-ring {
         width: 60px;
         height: 60px;
+    }
+}
+
+@media (max-width: 600px) {
+    .calendar-day {
+        padding: 8px 4px;
+        min-height: 44px;
+    }
+    
+    .calendar-day .day-number {
+        font-size: 0.8rem;
+    }
+    
+    .calendar-nav-btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px;
+    }
+    
+    .timer-controls {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .timer-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .timer-display {
+        font-size: 2rem;
+    }
+    
+    .company-tag,
+    .topic-tag {
+        touch-action: manipulation;
+    }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 10px;
+    }
+    
+    .diff-stat {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 400px) {
+    .calendar-grid {
+        gap: 2px;
+    }
+    
+    .calendar-day {
+        padding: 6px 2px;
+        min-height: 40px;
+        font-size: 0.68rem;
+    }
+    
+    .timer-display {
+        font-size: 1.8rem;
+    }
+    
+    .timer-btn {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .calendar-day,
+    .timer-btn,
+    .goal-item {
+        cursor: default;
+    }
+    
+    .calendar-day:active {
+        background: var(--accent-soft);
+        transform: scale(0.95);
+    }
+    
+    .timer-btn:active {
+        transform: scale(0.9);
+    }
+    
+    .company-tag:active,
+    .topic-tag:active {
+        transform: scale(0.96);
     }
 }

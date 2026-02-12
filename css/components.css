@@ -669,3 +669,43 @@
     pointer-events: none;
     z-index: 3000;
 }
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE ENHANCEMENTS FOR COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* Ensure inputs and textareas don't cause zoom on mobile */
+@media (max-width: 600px) {
+    .form-group input,
+    .form-group select,
+    .form-group textarea,
+    .filters-bar input,
+    .filters-bar select {
+        font-size: 16px; /* Prevents iOS zoom */
+    }
+}
+
+/* Better form field sizing on tablets */
+@media (max-width: 900px) {
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 11px 14px;
+    }
+}
+
+/* Ensure modals are accessible on all screen sizes */
+@media (max-height: 500px) {
+    .modal {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* Better button spacing on small screens */
+@media (max-width: 600px) {
+    .btn {
+        letter-spacing: 0;
+        white-space: normal;
+        text-align: center;
+    }
+}
