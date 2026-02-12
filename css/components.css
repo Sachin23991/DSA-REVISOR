@@ -71,6 +71,24 @@
     box-shadow: 0 6px 25px rgba(124, 106, 255, 0.45);
 }
 
+.btn-secondary {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-card);
+    color: var(--accent);
+    border-color: var(--border-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-secondary:active {
+    transform: translateY(0) scale(0.97);
+}
+
 .btn-outline {
     background: transparent;
     color: var(--text-secondary);
@@ -436,6 +454,10 @@
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     animation: gradientShift 4s ease infinite;
     background-size: 200% 200%;
+}
+
+.modal.modal-md {
+    max-width: 520px;
 }
 
 .modal.modal-lg {

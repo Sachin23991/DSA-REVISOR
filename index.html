@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/views.css">
+    <link rel="stylesheet" href="css/modern-features.css">
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="css/utilities.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -43,6 +44,9 @@
             </li>
             <li data-view="growth">
                 <span class="nav-icon">🧠</span><span class="nav-text">Growth Intel</span>
+            </li>
+            <li data-view="planner">
+                <span class="nav-icon">📅</span><span class="nav-text">Study Planner</span>
             </li>
             <li data-view="profile">
                 <span class="nav-icon">🏆</span><span class="nav-text">Profile</span>
@@ -149,6 +153,54 @@
                 </div>
                 <div id="dashboard-revisions-list" class="revision-quick-list">
                     <p class="empty-state">No revisions due today. You're all caught up! 🎉</p>
+                </div>
+            </div>
+
+            <!-- NEW: Timer Widget -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>⏱️ Focus Timer</h2>
+                </div>
+                <div class="timer-widget">
+                    <div class="timer-label">Problem Solving Timer</div>
+                    <div class="timer-display" id="timer-display">00:00:00</div>
+                    <div class="timer-controls">
+                        <button class="timer-btn" id="timer-start" title="Start">▶</button>
+                        <button class="timer-btn" id="timer-pause" title="Pause">⏸</button>
+                        <button class="timer-btn" id="timer-reset" title="Reset">⏹</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW: Progress by Topic -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>📊 Progress by Topic</h2>
+                </div>
+                <div class="progress-section" id="topic-progress-section">
+                    <!-- Dynamically populated -->
+                    <p class="empty-state">Add questions to see topic progress</p>
+                </div>
+            </div>
+
+            <!-- NEW: Difficulty Distribution -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>🎯 Difficulty Distribution</h2>
+                </div>
+                <div class="difficulty-distribution">
+                    <div class="diff-stat easy">
+                        <div class="diff-stat-value" id="diff-easy-count">0</div>
+                        <div class="diff-stat-label">Easy</div>
+                    </div>
+                    <div class="diff-stat medium">
+                        <div class="diff-stat-value" id="diff-medium-count">0</div>
+                        <div class="diff-stat-label">Medium</div>
+                    </div>
+                    <div class="diff-stat hard">
+                        <div class="diff-stat-value" id="diff-hard-count">0</div>
+                        <div class="diff-stat-label">Hard</div>
+                    </div>
                 </div>
             </div>
 
@@ -271,6 +323,19 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="q-companies">Company Tags (comma separated)</label>
+                    <input type="text" id="q-companies" placeholder="e.g., Google, Meta, Amazon, Microsoft">
+                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">
+                        Common companies: Google, Meta, Amazon, Microsoft, Apple, Netflix
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="q-code">Code Solution (Optional)</label>
+                    <textarea id="q-code" rows="6" placeholder="Paste your solution code here..." style="font-family: 'Courier New', monospace; font-size: 0.85rem;"></textarea>
+                </div>
+
+                <div class="form-group">
                     <label for="q-notes">Notes / Approach</label>
                     <textarea id="q-notes" rows="4" placeholder="Key observations, approach used, time complexity..."></textarea>
                 </div>
@@ -306,6 +371,7 @@
                 </div>
 
                 <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="form-back-btn" style="display:none;">← Go Back</button>
                     <button type="submit" class="btn btn-primary" id="form-submit-btn">Save Question</button>
                     <button type="reset" class="btn btn-outline" id="form-reset-btn">Reset</button>
                 </div>
@@ -520,6 +586,78 @@
                     <div id="recommendations" class="recommendations-list">
                         <p class="empty-state">Add more questions to get personalized recommendations.</p>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════ VIEW: STUDY PLANNER ═══════════ -->
+        <section class="view" id="view-planner">
+            <h1 class="view-title">📅 Study Planner</h1>
+
+            <!-- Goals Section -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>🎯 Weekly Goals</h2>
+                    <button class="btn btn-sm btn-accent" id="add-goal-btn">+ Add Goal</button>
+                </div>
+                
+                <div class="goal-tracker">
+                    <div class="goal-header">
+                        <div class="goal-title">This Week's Target</div>
+                        <div class="goal-status">
+                            <span id="goal-completed">0</span> / <span id="goal-target">10</span> problems
+                        </div>
+                    </div>
+                    <div class="goal-progress-ring">
+                        <svg viewBox="0 0 100 100">
+                            <defs>
+                                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:var(--accent);stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:var(--success);stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
+                            <circle class="ring-progress" id="goal-ring" cx="50" cy="50" r="42"
+                                    stroke-dasharray="264" stroke-dashoffset="264"
+                                    transform="rotate(-90 50 50)"></circle>
+                        </svg>
+                        <div class="goal-percentage" id="goal-percentage">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>📆 Calendar View</h2>
+                </div>
+                <div class="study-planner">
+                    <div class="calendar-header">
+                        <button class="calendar-nav-btn" id="cal-prev-month">◀</button>
+                        <div class="calendar-month" id="cal-month-year">January 2026</div>
+                        <button class="calendar-nav-btn" id="cal-next-month">▶</button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="calendar-day-header">Sun</div>
+                        <div class="calendar-day-header">Mon</div>
+                        <div class="calendar-day-header">Tue</div>
+                        <div class="calendar-day-header">Wed</div>
+                        <div class="calendar-day-header">Thu</div>
+                        <div class="calendar-day-header">Fri</div>
+                        <div class="calendar-day-header">Sat</div>
+                        <!-- Days populated dynamically -->
+                        <div id="calendar-days-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Schedule -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>📋 Upcoming Schedule</h2>
+                </div>
+                <div class="activity-feed" id="upcoming-schedule">
+                    <p class="empty-state">No scheduled tasks yet</p>
                 </div>
             </div>
         </section>
@@ -742,9 +880,42 @@
                 <!-- Populated dynamically -->
             </div>
             <div class="modal-actions">
+                <button class="btn btn-secondary" id="detail-back-btn">← Go Back</button>
                 <button class="btn btn-primary" id="detail-edit-btn">✏️ Edit</button>
                 <button class="btn btn-outline" id="detail-reset-rev-btn">🔄 Reset Revisions</button>
                 <button class="btn btn-danger" id="detail-delete-btn">🗑️ Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ CALENDAR ENTRY MODAL ═══════════ -->
+    <div class="modal-overlay" id="calendar-entry-modal">
+        <div class="modal modal-md">
+            <button class="modal-close" id="calendar-entry-close">✕</button>
+            <h2 class="modal-title" id="calendar-entry-title">📅 Add Calendar Entry</h2>
+            <div class="modal-body">
+                <form id="calendar-entry-form">
+                    <div class="form-group">
+                        <label>📌 Mark as Important</label>
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" id="cal-entry-important">
+                            <span>This is an important day</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="cal-entry-notes">📝 Notes / Thoughts</label>
+                        <textarea id="cal-entry-notes" rows="6" placeholder="What happened on this day? Goals, achievements, thoughts..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="cal-entry-tasks">✅ Tasks / To-Do</label>
+                        <textarea id="cal-entry-tasks" rows="4" placeholder="Tasks for this day (one per line)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="calendar-entry-cancel">Cancel</button>
+                <button class="btn btn-danger" id="calendar-entry-delete" style="display:none;">Delete Entry</button>
+                <button class="btn btn-primary" id="calendar-entry-save">💾 Save</button>
             </div>
         </div>
     </div>
@@ -778,6 +949,7 @@
     <script src="js/gamification.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/notifications.js"></script>
+    <script src="js/modern-features.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

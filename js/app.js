@@ -217,6 +217,7 @@ DSA.App = (() => {
         document.getElementById('form-reset-btn').addEventListener('click', () => {
             document.getElementById('edit-question-id').value = '';
             document.getElementById('form-submit-btn').textContent = 'Save Question';
+            document.getElementById('form-back-btn').style.display = 'none';
             document.getElementById('q-date').value = DSA.Store.todayStr();
         });
     }
@@ -246,6 +247,7 @@ DSA.App = (() => {
             showToast('Question updated successfully!', 'success');
             document.getElementById('edit-question-id').value = '';
             document.getElementById('form-submit-btn').textContent = 'Save Question';
+            document.getElementById('form-back-btn').style.display = 'none';
         } else {
             // Add new
             const q = DSA.Store.addQuestion(questionData);
@@ -501,9 +503,19 @@ DSA.App = (() => {
 
         // Detail modal
         document.getElementById('detail-modal-close').addEventListener('click', closeDetailModal);
+        document.getElementById('detail-back-btn').addEventListener('click', closeDetailModal);
         document.getElementById('detail-edit-btn').addEventListener('click', handleDetailEdit);
         document.getElementById('detail-reset-rev-btn').addEventListener('click', handleDetailReset);
         document.getElementById('detail-delete-btn').addEventListener('click', handleDetailDelete);
+
+        // Go Back from edit mode
+        document.getElementById('form-back-btn').addEventListener('click', () => {
+            document.getElementById('edit-question-id').value = '';
+            document.getElementById('question-form').reset();
+            document.getElementById('form-submit-btn').textContent = 'Save Question';
+            document.getElementById('form-back-btn').style.display = 'none';
+            switchView('questions');
+        });
 
         // Close on overlay click
         ['revision-modal', 'detail-modal'].forEach(id => {
@@ -583,66 +595,133 @@ DSA.App = (() => {
         const totalCycles = settings.totalCycles || 15;
         const progressPct = Math.round((q.revisionCycle / totalCycles) * 100);
 
+        // Difficulty badge helper
+        const diffClass = q.difficulty.toLowerCase();
+        const diffColors = { easy: 'var(--success)', medium: 'var(--warning)', hard: 'var(--danger)' };
+        const diffBgs = { easy: 'var(--success-bg)', medium: 'var(--warning-bg)', hard: 'var(--danger-bg)' };
+        const diffColor = diffColors[diffClass] || 'var(--text-primary)';
+        const diffBg = diffBgs[diffClass] || 'transparent';
+
+        // Status badge helper
+        const statusClass = q.status.toLowerCase().replace(/\s+/g, '-');
+        const statusColors = { solved: 'var(--info)', mastered: 'var(--success)', 'needs-revision': 'var(--warning)' };
+        const statusBgs = { solved: 'var(--info-bg)', mastered: 'var(--success-bg)', 'needs-revision': 'var(--warning-bg)' };
+        const statusColor = statusColors[statusClass] || 'var(--text-primary)';
+        const statusBg = statusBgs[statusClass] || 'transparent';
+
+        // Platform icon/emoji
+        const platformIcons = {
+            'LeetCode': '🟠', 'CodeStudio': '🔵', 'GeeksforGeeks': '🟢',
+            'HackerRank': '💚', 'Codeforces': '🔴', 'InterviewBit': '🟡', 'Other': '📝'
+        };
+        const platformIcon = platformIcons[q.platform] || '📝';
+
+        // Quality emoji for revision history
+        const qualityEmojis = { 1: '😫', 2: '😓', 3: '🤔', 4: '😊', 5: '🤩' };
+
+        // Calculate days since solved
+        const daysSinceSolved = Math.floor((new Date() - new Date(q.dateSolved)) / (1000 * 60 * 60 * 24));
+        const daysSinceText = daysSinceSolved === 0 ? 'Today' : daysSinceSolved === 1 ? '1 day ago' : `${daysSinceSolved} days ago`;
+
         document.getElementById('detail-title').textContent = q.name;
 
         const body = document.getElementById('detail-body');
         body.innerHTML = `
             <div class="detail-grid">
                 <div class="detail-field">
-                    <div class="detail-label">Subject</div>
+                    <div class="detail-label">📂 Subject</div>
                     <div class="detail-value">${q.subject}</div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">Difficulty</div>
-                    <div class="detail-value">${q.difficulty}</div>
+                    <div class="detail-label">⚡ Difficulty</div>
+                    <div class="detail-value">
+                        <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:0.82rem;font-weight:700;background:${diffBg};color:${diffColor};border:1px solid ${diffColor}22;">
+                            ${q.difficulty}
+                        </span>
+                    </div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">Platform</div>
-                    <div class="detail-value">${q.platform}</div>
+                    <div class="detail-label">🌐 Platform</div>
+                    <div class="detail-value">${platformIcon} ${q.platform}</div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">Date Solved</div>
-                    <div class="detail-value">${q.dateSolved}</div>
+                    <div class="detail-label">📅 Date Solved</div>
+                    <div class="detail-value">${q.dateSolved} <span style="font-size:0.75rem;color:var(--text-muted);margin-left:6px;">(${daysSinceText})</span></div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">Time Taken</div>
-                    <div class="detail-value">${q.timeTaken ? q.timeTaken + ' min' : 'N/A'}</div>
+                    <div class="detail-label">⏱️ Time Taken</div>
+                    <div class="detail-value">${q.timeTaken ? `<span style="font-variant-numeric:tabular-nums;">${q.timeTaken}</span> min` : '<span style="color:var(--text-muted);">—</span>'}</div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">Status</div>
-                    <div class="detail-value">${q.status}</div>
+                    <div class="detail-label">📋 Status</div>
+                    <div class="detail-value">
+                        <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:0.82rem;font-weight:700;background:${statusBg};color:${statusColor};border:1px solid ${statusColor}22;">
+                            ${q.status}
+                        </span>
+                    </div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">Ease Factor</div>
+                    <div class="detail-label">🧮 Ease Factor</div>
                     <div class="detail-value">${(q.easeFactor || 2.5).toFixed(2)}</div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">Next Revision</div>
-                    <div class="detail-value">${q.nextRevisionDate || 'N/A'}</div>
+                    <div class="detail-label">🔄 Next Revision</div>
+                    <div class="detail-value">${q.nextRevisionDate || '<span style="color:var(--text-muted);">—</span>'}</div>
                 </div>
-                <div class="detail-field">
-                    <div class="detail-label">Revision Progress</div>
+                <div class="detail-field detail-full">
+                    <div class="detail-label">📊 Revision Progress</div>
                     <div class="detail-value">
-                        ${q.revisionCycle}/${totalCycles} (${progressPct}%)
-                        <div class="q-progress-bar" style="margin-top:4px">
-                            <div class="q-progress-fill" style="width:${progressPct}%"></div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+                            <span style="font-size:1.1rem;font-weight:800;">${q.revisionCycle}<span style="color:var(--text-muted);font-weight:500;font-size:0.85rem;">/${totalCycles}</span></span>
+                            <span style="font-size:0.82rem;color:var(--text-muted);">(${progressPct}% complete)</span>
+                        </div>
+                        <div class="q-progress-bar" style="height:8px;border-radius:6px;">
+                            <div class="q-progress-fill" style="width:${progressPct}%;border-radius:6px;"></div>
                         </div>
                     </div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">XP Earned</div>
-                    <div class="detail-value">${q.xpEarned || 0} XP</div>
+                    <div class="detail-label">✨ XP Earned</div>
+                    <div class="detail-value"><span style="color:var(--accent);font-weight:800;font-size:1.05rem;">${q.xpEarned || 0}</span> <span style="color:var(--text-muted);font-size:0.8rem;">XP</span></div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">🔢 Confidence</div>
+                    <div class="detail-value">${'⭐'.repeat(Math.min(q.confidence || 0, 5))}${'☆'.repeat(5 - Math.min(q.confidence || 0, 5))}</div>
                 </div>
                 ${q.platformLink ? `
                 <div class="detail-field detail-full">
-                    <div class="detail-label">Link</div>
-                    <div class="detail-value"><a href="${escapeHtml(q.platformLink)}" target="_blank">${escapeHtml(q.platformLink)}</a></div>
+                    <div class="detail-label">🔗 Problem Link</div>
+                    <div class="detail-value"><a href="${escapeHtml(q.platformLink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(q.platformLink)}</a></div>
                 </div>
                 ` : ''}
                 ${q.tags && q.tags.length ? `
                 <div class="detail-field detail-full">
-                    <div class="detail-label">Tags</div>
+                    <div class="detail-label">🏷️ Tags</div>
                     <div class="detail-tags">${q.tags.map(t => `<span class="detail-tag">${escapeHtml(t)}</span>`).join('')}</div>
+                </div>
+                ` : ''}
+                ${q.companies ? `
+                <div class="detail-field detail-full">
+                    <div class="detail-label">🏢 Companies</div>
+                    <div class="detail-tags">${(typeof q.companies === 'string' ? q.companies.split(',') : q.companies).map(c => {
+                        const cn = c.trim();
+                        const ccls = cn.toLowerCase().replace('facebook','meta');
+                        const knownCompanies = ['google','meta','amazon','microsoft','apple','netflix'];
+                        const cls = knownCompanies.includes(ccls) ? ccls : '';
+                        return `<span class="detail-tag company-tag-mini ${cls}">${cn}</span>`;
+                    }).join('')}</div>
+                </div>
+                ` : ''}
+                ${q.code ? `
+                <div class="detail-field detail-full">
+                    <div class="detail-label">💻 Solution Code</div>
+                    <div class="detail-code-container">
+                        <div class="detail-code-header">
+                            <span style="font-size:0.72rem;color:var(--text-accent);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Code</span>
+                            <button class="detail-code-copy" onclick="navigator.clipboard.writeText(this.closest('.detail-code-container').querySelector('pre').textContent).then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='Copy'},1500)})">Copy</button>
+                        </div>
+                        <pre class="detail-code">${escapeHtml(q.code)}</pre>
+                    </div>
                 </div>
                 ` : ''}
                 ${q.importantNote ? `
@@ -653,7 +732,7 @@ DSA.App = (() => {
                 ` : ''}
                 ${q.notes ? `
                 <div class="detail-field detail-full">
-                    <div class="detail-label">Notes</div>
+                    <div class="detail-label">📝 Notes / Approach</div>
                     <div class="detail-notes">${escapeHtml(q.notes)}</div>
                 </div>
                 ` : ''}
@@ -662,15 +741,15 @@ DSA.App = (() => {
             <div class="detail-revision-history">
                 <h4>Revision History (${q.revisionHistory.length} entries)</h4>
                 <div class="revision-history-list">
-                    ${q.revisionHistory.map(r => `
+                    ${q.revisionHistory.map((r, i) => `
                         <div class="rev-history-item">
-                            <span>Cycle ${r.cycle} — ${r.date}</span>
-                            <span>Quality: ${r.quality}/5 ${r.timeTaken ? '• ' + r.timeTaken + 'min' : ''}</span>
+                            <span>${qualityEmojis[r.quality] || '📝'} Cycle ${r.cycle} — ${r.date}</span>
+                            <span>${'⭐'.repeat(Math.min(r.quality || 0, 5))} ${r.timeTaken ? '• ' + r.timeTaken + 'min' : ''}</span>
                         </div>
                     `).join('')}
                 </div>
             </div>
-            ` : ''}
+            ` : '<div class="detail-no-history"><span style="display:block;text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;">📋 No revision history yet. Complete your first revision to start tracking!</span></div>'}
         `;
 
         document.getElementById('detail-modal').classList.add('show');
@@ -702,6 +781,7 @@ DSA.App = (() => {
         document.getElementById('q-important-note').value = q.importantNote || '';
         document.getElementById('q-status').value = q.status;
         document.getElementById('form-submit-btn').textContent = 'Update Question';
+        document.getElementById('form-back-btn').style.display = '';
     }
 
     function handleDetailReset() {

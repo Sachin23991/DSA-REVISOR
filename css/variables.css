@@ -74,6 +74,34 @@
     --hm-2: rgba(124, 106, 255, 0.4);
     --hm-3: rgba(124, 106, 255, 0.65);
     --hm-4: rgba(124, 106, 255, 0.9);
+
+    /* Timer Colors */
+    --timer-active: #38d9a9;
+    --timer-paused: #f6ad55;
+    --timer-stopped: #ff6b6b;
+
+    /* Company Tag Colors */
+    --tag-google: #4285f4;
+    --tag-meta: #0668e1;
+    --tag-amazon: #ff9900;
+    --tag-microsoft: #00a4ef;
+    --tag-apple: #555555;
+    --tag-netflix: #e50914;
+
+    /* Progress Colors */
+    --progress-easy: #38d9a9;
+    --progress-medium: #f6ad55;
+    --progress-hard: #ff6b6b;
+
+    /* Enhanced Shadows */
+    --shadow-2xl: 0 20px 60px rgba(0, 0, 0, 0.6);
+    --shadow-inner: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-colored: 0 8px 32px rgba(124, 106, 255, 0.2);
+
+    /* Backdrop Effects */
+    --backdrop-blur-sm: blur(8px);
+    --backdrop-blur-md: blur(16px);
+    --backdrop-blur-lg: blur(24px);
 }
 
 /* ── Obsidian Theme (Light) ── */
@@ -118,4 +146,32 @@
     --hm-2: rgba(108, 99, 255, 0.3);
     --hm-3: rgba(108, 99, 255, 0.5);
     --hm-4: rgba(108, 99, 255, 0.75);
+
+    /* Timer Colors */
+    --timer-active: #38d9a9;
+    --timer-paused: #f6ad55;
+    --timer-stopped: #ff6b6b;
+
+    /* Company Tag Colors */
+    --tag-google: #4285f4;
+    --tag-meta: #0668e1;
+    --tag-amazon: #ff9900;
+    --tag-microsoft: #00a4ef;
+    --tag-apple: #333333;
+    --tag-netflix: #e50914;
+
+    /* Progress Colors */
+    --progress-easy: #38d9a9;
+    --progress-medium: #f6ad55;
+    --progress-hard: #ff6b6b;
+
+    /* Enhanced Shadows */
+    --shadow-2xl: 0 20px 60px rgba(0, 0, 0, 0.15);
+    --shadow-inner: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+    --shadow-colored: 0 8px 32px rgba(108, 99, 255, 0.15);
+
+    /* Backdrop Effects */
+    --backdrop-blur-sm: blur(8px);
+    --backdrop-blur-md: blur(16px);
+    --backdrop-blur-lg: blur(24px);
 }

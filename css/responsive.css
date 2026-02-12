@@ -242,4 +242,199 @@
     .theme-selector {
         flex-direction: column;
     }
+
+    /* Mobile optimizations for new features */
+    .timer-widget {
+        padding: 16px;
+    }
+
+    .timer-display {
+        font-size: 2rem;
+    }
+
+    .timer-controls {
+        gap: 8px;
+    }
+
+    .timer-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .company-tags {
+        gap: 4px;
+    }
+
+    .company-tag {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+
+    .topic-tags {
+        gap: 4px;
+    }
+
+    .topic-tag {
+        padding: 3px 8px;
+        font-size: 0.68rem;
+    }
+
+    .progress-section {
+        margin: 16px 0;
+    }
+
+    .progress-item {
+        margin-bottom: 16px;
+    }
+
+    .progress-label {
+        font-size: 0.82rem;
+    }
+
+    .progress-value {
+        font-size: 0.8rem;
+    }
+
+    .difficulty-distribution {
+        gap: 8px;
+    }
+
+    .diff-stat {
+        padding: 12px;
+    }
+
+    .diff-stat-value {
+        font-size: 1.6rem;
+    }
+
+    .diff-stat-label {
+        font-size: 0.8rem;
+    }
+
+    .study-planner {
+        padding: 16px;
+    }
+
+    .calendar-header {
+        margin-bottom: 16px;
+    }
+
+    .calendar-month {
+        font-size: 1rem;
+    }
+
+    .calendar-nav-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+
+    .calendar-grid {
+        gap: 4px;
+    }
+
+    .calendar-day-header {
+        font-size: 0.68rem;
+        padding: 4px 0;
+    }
+
+    .calendar-day {
+        font-size: 0.75rem;
+    }
+
+    .goal-tracker {
+        padding: 16px;
+    }
+
+    .goal-progress-ring {
+        width: 60px;
+        height: 60px;
+    }
+
+    .goal-percentage {
+        font-size: 1rem;
+    }
+
+    .code-snippet {
+        padding: 12px;
+    }
+
+    .code-content {
+        font-size: 0.75rem;
+    }
+
+    .problem-links {
+        gap: 6px;
+    }
+
+    .problem-link {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .badge-pill {
+        padding: 3px 8px;
+        font-size: 0.65rem;
+    }
+}
+
+/* ── Extra Small Mobile (max 400px) ── */
+@media (max-width: 400px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .view-title {
+        font-size: 1.3rem;
+    }
+
+    .stat-card {
+        padding: 14px;
+    }
+
+    .badges-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .timer-display {
+        font-size: 1.8rem;
+    }
+
+    .calendar-day {
+        font-size: 0.7rem;
+    }
+
+    .difficulty-distribution {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Print Styles ── */
+@media print {
+    #sidebar,
+    .top-bar,
+    .filters-bar,
+    .form-actions,
+    .modal-overlay,
+    .toast-container,
+    .confetti-canvas {
+        display: none;
+    }
+
+    #main-content {
+        margin-left: 0;
+    }
+
+    .view {
+        padding: 0;
+    }
+
+    .stat-card,
+    .chart-card,
+    .form-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
 }

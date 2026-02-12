@@ -11,7 +11,8 @@ DSA.Store = (() => {
         USER_STATS: 'dsa_user_stats',
         ACTIVITY_LOG: 'dsa_activity_log',
         SETTINGS: 'dsa_settings',
-        DAILY_LOG: 'dsa_daily_log'
+        DAILY_LOG: 'dsa_daily_log',
+        CALENDAR_ENTRIES: 'dsa_calendar_entries'
     };
 
     // ── Firestore Collections ──
@@ -317,6 +318,37 @@ DSA.Store = (() => {
         Object.values(KEYS).forEach(key => localStorage.removeItem(key));
     }
 
+    // ── Calendar Entries CRUD ──
+    function getCalendarEntries() {
+        return load(KEYS.CALENDAR_ENTRIES) || {};
+    }
+
+    function saveCalendarEntries(entries) {
+        save(KEYS.CALENDAR_ENTRIES, entries);
+    }
+
+    function getCalendarEntry(dateKey) {
+        const entries = getCalendarEntries();
+        return entries[dateKey] || null;
+    }
+
+    function saveCalendarEntry(dateKey, data) {
+        const entries = getCalendarEntries();
+        entries[dateKey] = {
+            ...data,
+            dateKey,
+            lastModified: new Date().toISOString()
+        };
+        saveCalendarEntries(entries);
+        return entries[dateKey];
+    }
+
+    function deleteCalendarEntry(dateKey) {
+        const entries = getCalendarEntries();
+        delete entries[dateKey];
+        saveCalendarEntries(entries);
+    }
+
     // ── Helpers ──
     function generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
@@ -344,6 +376,10 @@ DSA.Store = (() => {
         getDailyLog,
         logDailyActivity,
         addDailyXP,
+        getCalendarEntries,
+        getCalendarEntry,
+        saveCalendarEntry,
+        deleteCalendarEntry,
         exportData,
         importData,
         resetAllData,
