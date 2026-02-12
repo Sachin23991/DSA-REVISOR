@@ -230,7 +230,6 @@ DSA.App = (() => {
         const editId = document.getElementById('edit-question-id').value;
         const questionData = {
             name: document.getElementById('q-name').value.trim(),
-            stream: document.getElementById('q-stream').value,
             platform: document.getElementById('q-platform').value,
             platformLink: document.getElementById('q-link').value.trim(),
             subject: document.getElementById('q-subject').value.trim(),
@@ -311,7 +310,6 @@ DSA.App = (() => {
                     <div class="q-main">
                         <div class="q-name">${escapeHtml(q.name)}</div>
                         <div class="q-meta">
-                            ${q.stream ? `<span class="q-stream-tag">${q.stream}</span>` : ''}
                             <span>${q.subject}</span>
                             <span>${q.platform}</span>
                             <span>${q.dateSolved}</span>
@@ -337,22 +335,19 @@ DSA.App = (() => {
         const difficulty = document.getElementById('filter-difficulty').value;
         const status = document.getElementById('filter-status').value;
         const platform = document.getElementById('filter-platform').value;
-        const stream = document.getElementById('filter-stream') ? document.getElementById('filter-stream').value : '';
         const sort = document.getElementById('sort-questions').value;
 
         if (search) {
             questions = questions.filter(q =>
                 q.name.toLowerCase().includes(search) ||
                 (q.tags || []).some(t => t.toLowerCase().includes(search)) ||
-                q.subject.toLowerCase().includes(search) ||
-                (q.stream || '').toLowerCase().includes(search)
+                q.subject.toLowerCase().includes(search)
             );
         }
         if (subject) questions = questions.filter(q => q.subject === subject);
         if (difficulty) questions = questions.filter(q => q.difficulty === difficulty);
         if (status) questions = questions.filter(q => q.status === status);
         if (platform) questions = questions.filter(q => q.platform === platform);
-        if (stream) questions = questions.filter(q => q.stream === stream);
 
         // Sort
         switch (sort) {
@@ -371,7 +366,7 @@ DSA.App = (() => {
     }
 
     function setupFilters() {
-        ['search-questions', 'filter-subject', 'filter-difficulty', 'filter-status', 'filter-platform', 'filter-stream', 'sort-questions'].forEach(id => {
+        ['search-questions', 'filter-subject', 'filter-difficulty', 'filter-status', 'filter-platform', 'sort-questions'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener(id === 'search-questions' ? 'input' : 'change', refreshQuestionsList);
         });
@@ -391,16 +386,6 @@ DSA.App = (() => {
                 subjects.map(s => `<option value="${s}">${s}</option>`).join('');
             el.value = val;
         });
-
-        // Streams
-        const streams = [...new Set(questions.map(q => q.stream).filter(Boolean))].sort();
-        const streamSelect = document.getElementById('filter-stream');
-        if (streamSelect) {
-            const val = streamSelect.value;
-            streamSelect.innerHTML = '<option value="">All Streams</option>' +
-                streams.map(s => `<option value="${s}">${s}</option>`).join('');
-            streamSelect.value = val;
-        }
 
         // Platforms / Sources
         const platforms = [...new Set(questions.map(q => q.platform))].sort();
@@ -809,7 +794,6 @@ DSA.App = (() => {
         // Pre-fill form
         document.getElementById('edit-question-id').value = q.id;
         document.getElementById('q-name').value = q.name;
-        document.getElementById('q-stream').value = q.stream || '';
         document.getElementById('q-platform').value = q.platform;
         document.getElementById('q-link').value = q.platformLink || '';
         document.getElementById('q-subject').value = q.subject;

@@ -248,7 +248,7 @@ DSA.ModernFeatures = (() => {
 
         const questions = DSA.Store?.getAllQuestions?.() || [];
         if (questions.length === 0) {
-            container.innerHTML = '<p class="empty-state">Add topics to see subject progress</p>';
+            container.innerHTML = '<p class="empty-state">Add questions to see subject progress</p>';
             return;
         }
 

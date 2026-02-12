@@ -35,10 +35,10 @@
                 <span class="nav-icon">📊</span><span class="nav-text">Dashboard</span>
             </li>
             <li data-view="add-question">
-                <span class="nav-icon">➕</span><span class="nav-text">Add Topic</span>
+                <span class="nav-icon">➕</span><span class="nav-text">Add Question</span>
             </li>
             <li data-view="questions">
-                <span class="nav-icon">📋</span><span class="nav-text">All Topics</span>
+                <span class="nav-icon">📋</span><span class="nav-text">All Questions</span>
             </li>
             <li data-view="revisions">
                 <span class="nav-icon">🔁</span><span class="nav-text">Revisions</span>
@@ -87,7 +87,7 @@
                 <span class="date-display" id="date-display"></span>
             </div>
             <div class="top-bar-actions">
-                <button class="btn btn-sm btn-accent" id="quick-add-btn">+ Add Topic</button>
+                <button class="btn btn-sm btn-accent" id="quick-add-btn">+ Add Question</button>
                 <button class="theme-toggle" id="theme-toggle-btn" title="Switch Theme">
                     <span class="theme-icon" id="theme-icon">🌙</span>
                     <span id="theme-label">Dark</span>
@@ -186,7 +186,7 @@
                 </div>
                 <div class="progress-section" id="topic-progress-section">
                     <!-- Dynamically populated -->
-                    <p class="empty-state">Add topics to see subject progress</p>
+                    <p class="empty-state">Add questions to see subject progress</p>
                 </div>
             </div>
 
@@ -247,43 +247,6 @@
             <h1 class="view-title">Log New Topic</h1>
             <form id="question-form" class="form-card">
                 <input type="hidden" id="edit-question-id" value="">
-
-                <div class="form-row">
-                    <div class="form-group flex-1">
-                        <label for="q-stream">Stream / Field *</label>
-                        <select id="q-stream" required>
-                            <option value="">Select Stream</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Electronics">Electronics & Communication</option>
-                            <option value="Mechanical">Mechanical Engineering</option>
-                            <option value="Civil">Civil Engineering</option>
-                            <option value="Electrical">Electrical Engineering</option>
-                            <option value="Chemical">Chemical Engineering</option>
-                            <option value="Biotechnology">Biotechnology</option>
-                            <option value="Information Technology">Information Technology</option>
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Physics">Physics</option>
-                            <option value="Chemistry">Chemistry</option>
-                            <option value="Biology">Biology</option>
-                            <option value="Commerce">Commerce & Accounting</option>
-                            <option value="Economics">Economics</option>
-                            <option value="Arts">Arts & Humanities</option>
-                            <option value="Law">Law</option>
-                            <option value="Medicine">Medicine & Health Sciences</option>
-                            <option value="Management">Management & MBA</option>
-                            <option value="Design">Design</option>
-                            <option value="Agriculture">Agriculture</option>
-                            <option value="Pharmacy">Pharmacy</option>
-                            <option value="UPSC">UPSC / Civil Services</option>
-                            <option value="SSC">SSC / Govt. Exams</option>
-                            <option value="GATE">GATE</option>
-                            <option value="CAT">CAT / MBA Entrance</option>
-                            <option value="JEE">JEE / Engineering Entrance</option>
-                            <option value="NEET">NEET / Medical Entrance</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                </div>
 
                 <div class="form-row">
                     <div class="form-group flex-2">
@@ -351,14 +314,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="q-companies">Exam / Context Tags (comma separated)</label>
-                    <input type="text" id="q-companies" placeholder="e.g., GATE, Semester Exam, Midterm, Board Exam">
-                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">
-                        Tag exams or contexts where this topic is relevant
-                    </small>
-                </div>
-
-                <div class="form-group">
                     <label for="q-code">Answer / Solution (Optional)</label>
                     <textarea id="q-code" rows="6" placeholder="Write your solution, derivation, or answer here..." style="font-family: 'Courier New', monospace; font-size: 0.85rem;"></textarea>
                 </div>
@@ -408,7 +363,7 @@
 
         <!-- ═══════════ VIEW: ALL QUESTIONS ═══════════ -->
         <section class="view" id="view-questions">
-            <h1 class="view-title">All Topics</h1>
+            <h1 class="view-title">All Questions</h1>
 
             <!-- Filters -->
             <div class="filters-bar">
@@ -421,9 +376,6 @@
                     <option value="Easy">Easy</option>
                     <option value="Medium">Medium</option>
                     <option value="Hard">Hard</option>
-                </select>
-                <select id="filter-stream" class="filter-select">
-                    <option value="">All Streams</option>
                 </select>
                 <select id="filter-status" class="filter-select">
                     <option value="">All Status</option>
