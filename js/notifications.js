@@ -62,7 +62,7 @@ DSA.Notifications = (() => {
         if (overdue.length > 0) {
             send(
                 '⚠️ Overdue Revisions!',
-                `You have ${overdue.length} overdue question${overdue.length > 1 ? 's' : ''} waiting for revision.`,
+                `You have ${overdue.length} overdue topic${overdue.length > 1 ? 's' : ''} waiting for revision.`,
                 { tag: 'overdue-alert' }
             );
         }
@@ -70,7 +70,7 @@ DSA.Notifications = (() => {
         if (dueToday.length > 0) {
             send(
                 '📚 Revisions Due Today',
-                `${dueToday.length} question${dueToday.length > 1 ? 's' : ''} scheduled for revision today.`,
+                `${dueToday.length} topic${dueToday.length > 1 ? 's' : ''} scheduled for revision today.`,
                 { tag: 'due-today' }
             );
         }

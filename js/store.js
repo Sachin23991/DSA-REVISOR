@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════
-   DSA Tracker — Data Store (localStorage + Firestore)
+   Study Tracker — Data Store (localStorage + Firestore)
    Dual-persistence: localStorage for speed, Firestore for cloud sync
+   Universal platform for students of any stream
    ═══════════════════════════════════════════════════════ */
 
 window.DSA = window.DSA || {};
@@ -12,7 +13,8 @@ DSA.Store = (() => {
         ACTIVITY_LOG: 'dsa_activity_log',
         SETTINGS: 'dsa_settings',
         DAILY_LOG: 'dsa_daily_log',
-        CALENDAR_ENTRIES: 'dsa_calendar_entries'
+        CALENDAR_ENTRIES: 'dsa_calendar_entries',
+        SYLLABUS: 'dsa_syllabus'
     };
 
     // ── Firestore Collections ──
@@ -283,8 +285,9 @@ DSA.Store = (() => {
             activityLog: getActivityLog(),
             settings: getSettings(),
             dailyLog: getDailyLog(),
+            syllabus: getSyllabi(),
             exportDate: new Date().toISOString(),
-            version: '1.0'
+            version: '2.0'
         }, null, 2);
     }
 
@@ -300,6 +303,7 @@ DSA.Store = (() => {
             if (data.activityLog) save(KEYS.ACTIVITY_LOG, data.activityLog);
             if (data.settings) save(KEYS.SETTINGS, data.settings);
             if (data.dailyLog) save(KEYS.DAILY_LOG, data.dailyLog);
+            if (data.syllabus) save(KEYS.SYLLABUS, data.syllabus);
             return true;
         } catch (e) {
             console.error('Import failed:', e);
@@ -349,6 +353,55 @@ DSA.Store = (() => {
         saveCalendarEntries(entries);
     }
 
+    // ── Syllabus CRUD ──
+    function getSyllabi() {
+        return load(KEYS.SYLLABUS, []);
+    }
+
+    function saveSyllabi(syllabi) {
+        save(KEYS.SYLLABUS, syllabi);
+    }
+
+    function addSyllabus(syllabus) {
+        const syllabi = getSyllabi();
+        syllabus.id = generateId();
+        syllabus.createdAt = new Date().toISOString();
+        syllabus.updatedAt = new Date().toISOString();
+        syllabi.push(syllabus);
+        saveSyllabi(syllabi);
+        addActivity('add', `Added syllabus "${syllabus.name}" (${syllabus.stream})`);
+        return syllabus;
+    }
+
+    function updateSyllabus(id, updates) {
+        const syllabi = getSyllabi();
+        const idx = syllabi.findIndex(s => s.id === id);
+        if (idx === -1) return null;
+        syllabi[idx] = { ...syllabi[idx], ...updates, updatedAt: new Date().toISOString() };
+        saveSyllabi(syllabi);
+        return syllabi[idx];
+    }
+
+    function deleteSyllabus(id) {
+        const syllabi = getSyllabi().filter(s => s.id !== id);
+        saveSyllabi(syllabi);
+        addActivity('delete', 'Deleted a syllabus');
+    }
+
+    function toggleSyllabusTopic(syllabusId, topicIndex) {
+        const syllabi = getSyllabi();
+        const syl = syllabi.find(s => s.id === syllabusId);
+        if (!syl || !syl.topics[topicIndex]) return;
+        
+        syl.topics[topicIndex].completed = !syl.topics[topicIndex].completed;
+        syl.topics[topicIndex].completedDate = syl.topics[topicIndex].completed 
+            ? new Date().toISOString().split('T')[0] 
+            : null;
+        syl.updatedAt = new Date().toISOString();
+        saveSyllabi(syllabi);
+        return syl;
+    }
+
     // ── Helpers ──
     function generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
@@ -380,6 +433,11 @@ DSA.Store = (() => {
         getCalendarEntry,
         saveCalendarEntry,
         deleteCalendarEntry,
+        getSyllabi,
+        addSyllabus,
+        updateSyllabus,
+        deleteSyllabus,
+        toggleSyllabusTopic,
         exportData,
         importData,
         resetAllData,

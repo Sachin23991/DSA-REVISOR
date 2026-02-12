@@ -124,26 +124,26 @@ DSA.Gamification = (() => {
 
     // ── Badge Definitions ──
     const BADGES = [
-        { id: 'first_question', name: 'First Step', icon: '🌱', description: 'Log your first question', check: (s, q) => q.length >= 1 },
-        { id: 'ten_questions', name: 'Getting Started', icon: '📝', description: 'Log 10 questions', check: (s, q) => q.length >= 10 },
-        { id: 'fifty_questions', name: 'Committed', icon: '💪', description: 'Log 50 questions', check: (s, q) => q.length >= 50 },
-        { id: 'hundred_questions', name: 'Centurion', icon: '🏛️', description: 'Log 100 questions', check: (s, q) => q.length >= 100 },
-        { id: 'five_hundred', name: 'DSA Warrior', icon: '⚔️', description: 'Log 500 questions', check: (s, q) => q.length >= 500 },
+        { id: 'first_question', name: 'First Step', icon: '🌱', description: 'Log your first topic', check: (s, q) => q.length >= 1 },
+        { id: 'ten_questions', name: 'Getting Started', icon: '📝', description: 'Log 10 topics', check: (s, q) => q.length >= 10 },
+        { id: 'fifty_questions', name: 'Committed', icon: '💪', description: 'Log 50 topics', check: (s, q) => q.length >= 50 },
+        { id: 'hundred_questions', name: 'Centurion', icon: '🏛️', description: 'Log 100 topics', check: (s, q) => q.length >= 100 },
+        { id: 'five_hundred', name: 'Knowledge Warrior', icon: '⚔️', description: 'Log 500 topics', check: (s, q) => q.length >= 500 },
         { id: 'first_revision', name: 'Revisor', icon: '🔄', description: 'Complete first revision', check: (s) => (s.totalRevisions || 0) >= 1 },
         { id: 'fifty_revisions', name: 'Diligent', icon: '📖', description: 'Complete 50 revisions', check: (s) => (s.totalRevisions || 0) >= 50 },
         { id: 'two_hundred_rev', name: 'Review Master', icon: '🎓', description: 'Complete 200 revisions', check: (s) => (s.totalRevisions || 0) >= 200 },
-        { id: 'first_mastered', name: 'First Mastery', icon: '⭐', description: 'Master your first question', check: (s, q) => q.filter(x => x.status === 'Mastered').length >= 1 },
-        { id: 'ten_mastered', name: 'Scholar', icon: '🏅', description: 'Master 10 questions', check: (s, q) => q.filter(x => x.status === 'Mastered').length >= 10 },
-        { id: 'fifty_mastered', name: 'Grandmaster', icon: '👑', description: 'Master 50 questions', check: (s, q) => q.filter(x => x.status === 'Mastered').length >= 50 },
+        { id: 'first_mastered', name: 'First Mastery', icon: '⭐', description: 'Master your first topic', check: (s, q) => q.filter(x => x.status === 'Mastered').length >= 1 },
+        { id: 'ten_mastered', name: 'Scholar', icon: '🏅', description: 'Master 10 topics', check: (s, q) => q.filter(x => x.status === 'Mastered').length >= 10 },
+        { id: 'fifty_mastered', name: 'Grandmaster', icon: '👑', description: 'Master 50 topics', check: (s, q) => q.filter(x => x.status === 'Mastered').length >= 50 },
         { id: 'streak_7', name: 'Week Warrior', icon: '🔥', description: '7-day streak', check: (s) => (s.longestStreak || 0) >= 7 },
         { id: 'streak_30', name: 'Monthly Dedication', icon: '🌟', description: '30-day streak', check: (s) => (s.longestStreak || 0) >= 30 },
         { id: 'streak_100', name: 'Unstoppable', icon: '💎', description: '100-day streak', check: (s) => (s.longestStreak || 0) >= 100 },
         { id: 'level_5', name: 'Rising Star', icon: '🌠', description: 'Reach Level 5', check: (s) => (s.level || 1) >= 5 },
         { id: 'level_10', name: 'Veteran', icon: '🏆', description: 'Reach Level 10', check: (s) => (s.level || 1) >= 10 },
         { id: 'level_25', name: 'Legend', icon: '🐉', description: 'Reach Level 25', check: (s) => (s.level || 1) >= 25 },
-        { id: 'all_subjects', name: 'Well-Rounded', icon: '🌐', description: 'Solve from 5+ subjects', check: (s, q) => new Set(q.map(x => x.subject)).size >= 5 },
-        { id: 'hard_master', name: 'Hard Hitter', icon: '🥊', description: 'Master 5 Hard questions', check: (s, q) => q.filter(x => x.difficulty === 'Hard' && x.status === 'Mastered').length >= 5 },
-        { id: 'speed_demon', name: 'Speed Demon', icon: '⚡', description: 'Solve 5 questions in <15min each', check: (s, q) => q.filter(x => x.timeTaken && x.timeTaken <= 15).length >= 5 },
+        { id: 'all_subjects', name: 'Well-Rounded', icon: '🌐', description: 'Study from 5+ subjects', check: (s, q) => new Set(q.map(x => x.subject)).size >= 5 },
+        { id: 'hard_master', name: 'Hard Hitter', icon: '🥊', description: 'Master 5 Hard topics', check: (s, q) => q.filter(x => x.difficulty === 'Hard' && x.status === 'Mastered').length >= 5 },
+        { id: 'speed_demon', name: 'Speed Demon', icon: '⚡', description: 'Study 5 topics in <15min each', check: (s, q) => q.filter(x => x.timeTaken && x.timeTaken <= 15).length >= 5 },
     ];
 
     /**

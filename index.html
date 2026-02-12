@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Work-Tracker</title>
+    <title>Study Tracker — Universal Revision Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,18 +23,18 @@
     <!-- ═══════════ SIDEBAR ═══════════ -->
     <nav id="sidebar">
         <div class="sidebar-header">
-            <span class="logo">⚡</span>
-            <h2>Work Tracker</h2>
+            <span class="logo">📖</span>
+            <h2>Study Tracker</h2>
         </div>
         <ul class="nav-links">
             <li class="active" data-view="dashboard">
                 <span class="nav-icon">📊</span><span class="nav-text">Dashboard</span>
             </li>
             <li data-view="add-question">
-                <span class="nav-icon">➕</span><span class="nav-text">Add Question</span>
+                <span class="nav-icon">➕</span><span class="nav-text">Add Topic</span>
             </li>
             <li data-view="questions">
-                <span class="nav-icon">📋</span><span class="nav-text">All Questions</span>
+                <span class="nav-icon">📋</span><span class="nav-text">All Topics</span>
             </li>
             <li data-view="revisions">
                 <span class="nav-icon">🔁</span><span class="nav-text">Revisions</span>
@@ -44,6 +44,9 @@
             </li>
             <li data-view="growth">
                 <span class="nav-icon">🧠</span><span class="nav-text">Growth Intel</span>
+            </li>
+            <li data-view="syllabus">
+                <span class="nav-icon">📚</span><span class="nav-text">Syllabus</span>
             </li>
             <li data-view="planner">
                 <span class="nav-icon">📅</span><span class="nav-text">Study Planner</span>
@@ -76,11 +79,11 @@
         <header class="top-bar">
             <button id="menu-toggle" class="menu-btn">☰</button>
             <div class="top-bar-info">
-                <span class="greeting" id="greeting">Good Morning, Coder!</span>
+                <span class="greeting" id="greeting">Good Morning, Learner!</span>
                 <span class="date-display" id="date-display"></span>
             </div>
             <div class="top-bar-actions">
-                <button class="btn btn-sm btn-accent" id="quick-add-btn">+ Quick Add</button>
+                <button class="btn btn-sm btn-accent" id="quick-add-btn">+ Add Topic</button>
                 <button class="theme-toggle" id="theme-toggle-btn" title="Switch Theme">
                     <span class="theme-icon" id="theme-icon">🌙</span>
                     <span id="theme-label">Dark</span>
@@ -162,7 +165,7 @@
                     <h2>⏱️ Focus Timer</h2>
                 </div>
                 <div class="timer-widget">
-                    <div class="timer-label">Problem Solving Timer</div>
+                    <div class="timer-label">Study Focus Timer</div>
                     <div class="timer-display" id="timer-display">00:00:00</div>
                     <div class="timer-controls">
                         <button class="timer-btn" id="timer-start" title="Start">▶</button>
@@ -179,7 +182,7 @@
                 </div>
                 <div class="progress-section" id="topic-progress-section">
                     <!-- Dynamically populated -->
-                    <p class="empty-state">Add questions to see topic progress</p>
+                    <p class="empty-state">Add topics to see subject progress</p>
                 </div>
             </div>
 
@@ -230,21 +233,58 @@
                     <h2>Recent Activity</h2>
                 </div>
                 <div id="recent-activity" class="activity-feed">
-                    <p class="empty-state">No recent activity yet. Start by adding a question!</p>
+                    <p class="empty-state">No recent activity yet. Start by adding a topic!</p>
                 </div>
             </div>
         </section>
 
         <!-- ═══════════ VIEW: ADD QUESTION ═══════════ -->
         <section class="view" id="view-add-question">
-            <h1 class="view-title">Log New Question</h1>
+            <h1 class="view-title">Log New Topic</h1>
             <form id="question-form" class="form-card">
                 <input type="hidden" id="edit-question-id" value="">
 
                 <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="q-stream">Stream / Field *</label>
+                        <select id="q-stream" required>
+                            <option value="">Select Stream</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Electronics">Electronics & Communication</option>
+                            <option value="Mechanical">Mechanical Engineering</option>
+                            <option value="Civil">Civil Engineering</option>
+                            <option value="Electrical">Electrical Engineering</option>
+                            <option value="Chemical">Chemical Engineering</option>
+                            <option value="Biotechnology">Biotechnology</option>
+                            <option value="Information Technology">Information Technology</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Biology">Biology</option>
+                            <option value="Commerce">Commerce & Accounting</option>
+                            <option value="Economics">Economics</option>
+                            <option value="Arts">Arts & Humanities</option>
+                            <option value="Law">Law</option>
+                            <option value="Medicine">Medicine & Health Sciences</option>
+                            <option value="Management">Management & MBA</option>
+                            <option value="Design">Design</option>
+                            <option value="Agriculture">Agriculture</option>
+                            <option value="Pharmacy">Pharmacy</option>
+                            <option value="UPSC">UPSC / Civil Services</option>
+                            <option value="SSC">SSC / Govt. Exams</option>
+                            <option value="GATE">GATE</option>
+                            <option value="CAT">CAT / MBA Entrance</option>
+                            <option value="JEE">JEE / Engineering Entrance</option>
+                            <option value="NEET">NEET / Medical Entrance</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group flex-2">
-                        <label for="q-name">Question Name *</label>
-                        <input type="text" id="q-name" placeholder="e.g., Two Sum" required>
+                        <label for="q-name">Topic / Question Name *</label>
+                        <input type="text" id="q-name" placeholder="e.g., Newton's Laws, Two Sum, Supply & Demand" required>
                     </div>
                     <div class="form-group flex-1">
                         <label for="q-difficulty">Difficulty *</label>
@@ -259,85 +299,69 @@
 
                 <div class="form-row">
                     <div class="form-group flex-1">
-                        <label for="q-platform">Platform</label>
+                        <label for="q-platform">Source / Reference</label>
                         <select id="q-platform">
+                            <option value="Textbook">Textbook</option>
+                            <option value="Lecture Notes">Lecture Notes</option>
+                            <option value="Online Course">Online Course</option>
+                            <option value="YouTube">YouTube</option>
+                            <option value="Research Paper">Research Paper</option>
                             <option value="LeetCode">LeetCode</option>
-                            <option value="CodeStudio">CodeStudio</option>
                             <option value="GeeksforGeeks">GeeksforGeeks</option>
-                            <option value="HackerRank">HackerRank</option>
-                            <option value="Codeforces">Codeforces</option>
-                            <option value="InterviewBit">InterviewBit</option>
+                            <option value="Khan Academy">Khan Academy</option>
+                            <option value="Coursera">Coursera</option>
+                            <option value="Udemy">Udemy</option>
+                            <option value="NPTEL">NPTEL</option>
+                            <option value="Class Notes">Class Notes</option>
+                            <option value="Previous Year Papers">Previous Year Papers</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
                     <div class="form-group flex-2">
-                        <label for="q-link">Platform Link</label>
-                        <input type="url" id="q-link" placeholder="https://leetcode.com/problems/...">
+                        <label for="q-link">Reference Link (optional)</label>
+                        <input type="url" id="q-link" placeholder="https://...">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group flex-1">
-                        <label for="q-subject">Subject/Category *</label>
-                        <select id="q-subject" required>
-                            <option value="">Select</option>
-                            <option value="Array">Array</option>
-                            <option value="String">String</option>
-                            <option value="Linked List">Linked List</option>
-                            <option value="Stack">Stack</option>
-                            <option value="Queue">Queue</option>
-                            <option value="Tree">Tree</option>
-                            <option value="Binary Search Tree">Binary Search Tree</option>
-                            <option value="Heap">Heap</option>
-                            <option value="Graph">Graph</option>
-                            <option value="Dynamic Programming">Dynamic Programming</option>
-                            <option value="Greedy">Greedy</option>
-                            <option value="Backtracking">Backtracking</option>
-                            <option value="Bit Manipulation">Bit Manipulation</option>
-                            <option value="Math">Math</option>
-                            <option value="Two Pointers">Two Pointers</option>
-                            <option value="Sliding Window">Sliding Window</option>
-                            <option value="Binary Search">Binary Search</option>
-                            <option value="Sorting">Sorting</option>
-                            <option value="Hashing">Hashing</option>
-                            <option value="Recursion">Recursion</option>
-                            <option value="Trie">Trie</option>
-                            <option value="Segment Tree">Segment Tree</option>
-                            <option value="Disjoint Set">Disjoint Set</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <label for="q-subject">Subject / Chapter *</label>
+                        <input type="text" id="q-subject" placeholder="e.g., Data Structures, Organic Chemistry, Microeconomics" required list="subject-suggestions">
+                        <datalist id="subject-suggestions">
+                            <!-- Dynamically populated from existing subjects -->
+                        </datalist>
                     </div>
                     <div class="form-group flex-1">
-                        <label for="q-date">Date Solved *</label>
+                        <label for="q-date">Date Studied *</label>
                         <input type="date" id="q-date" required>
                     </div>
                     <div class="form-group flex-1">
-                        <label for="q-time">Time Taken (min)</label>
+                        <label for="q-time">Time Spent (min)</label>
                         <input type="number" id="q-time" placeholder="30" min="0">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="q-tags">Tags (comma separated)</label>
-                    <input type="text" id="q-tags" placeholder="e.g., sliding-window, hashmap, optimal">
+                    <input type="text" id="q-tags" placeholder="e.g., formulas, important, exam-topic, chapter-3">
                 </div>
 
                 <div class="form-group">
-                    <label for="q-companies">Company Tags (comma separated)</label>
-                    <input type="text" id="q-companies" placeholder="e.g., Google, Meta, Amazon, Microsoft">
+                    <label for="q-companies">Exam / Context Tags (comma separated)</label>
+                    <input type="text" id="q-companies" placeholder="e.g., GATE, Semester Exam, Midterm, Board Exam">
                     <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">
-                        Common companies: Google, Meta, Amazon, Microsoft, Apple, Netflix
+                        Tag exams or contexts where this topic is relevant
                     </small>
                 </div>
 
                 <div class="form-group">
-                    <label for="q-code">Code Solution (Optional)</label>
-                    <textarea id="q-code" rows="6" placeholder="Paste your solution code here..." style="font-family: 'Courier New', monospace; font-size: 0.85rem;"></textarea>
+                    <label for="q-code">Answer / Solution (Optional)</label>
+                    <textarea id="q-code" rows="6" placeholder="Write your solution, derivation, or answer here..." style="font-family: 'Courier New', monospace; font-size: 0.85rem;"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="q-notes">Notes / Approach</label>
-                    <textarea id="q-notes" rows="4" placeholder="Key observations, approach used, time complexity..."></textarea>
+                    <label for="q-notes">Notes / Key Points</label>
+                    <textarea id="q-notes" rows="4" placeholder="Key formulas, concepts, mnemonics, approach used..."></textarea>
                 </div>
 
                 <div class="form-group important-note-group">
@@ -345,14 +369,14 @@
                         <span class="important-label">📌 Important Note</span>
                         <span class="important-hint">(key insight, gotcha, or must-remember detail)</span>
                     </label>
-                    <textarea id="q-important-note" rows="3" class="important-note-input" placeholder="e.g., Edge case: empty array returns -1. Don't forget to sort first!"></textarea>
+                    <textarea id="q-important-note" rows="3" class="important-note-input" placeholder="e.g., Don't confuse velocity with speed. Remember the sign convention!"></textarea>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group flex-1">
                         <label for="q-status">Status</label>
                         <select id="q-status">
-                            <option value="Solved">Solved</option>
+                            <option value="Solved">Studied</option>
                             <option value="Needs Revision">Needs Revision</option>
                             <option value="Mastered">Mastered</option>
                         </select>
@@ -372,7 +396,7 @@
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="form-back-btn" style="display:none;">← Go Back</button>
-                    <button type="submit" class="btn btn-primary" id="form-submit-btn">Save Question</button>
+                    <button type="submit" class="btn btn-primary" id="form-submit-btn">Save Topic</button>
                     <button type="reset" class="btn btn-outline" id="form-reset-btn">Reset</button>
                 </div>
             </form>
@@ -380,11 +404,11 @@
 
         <!-- ═══════════ VIEW: ALL QUESTIONS ═══════════ -->
         <section class="view" id="view-questions">
-            <h1 class="view-title">All Questions</h1>
+            <h1 class="view-title">All Topics</h1>
 
             <!-- Filters -->
             <div class="filters-bar">
-                <input type="text" id="search-questions" class="search-input" placeholder="🔍 Search questions...">
+                <input type="text" id="search-questions" class="search-input" placeholder="🔍 Search topics...">
                 <select id="filter-subject" class="filter-select">
                     <option value="">All Subjects</option>
                 </select>
@@ -394,14 +418,17 @@
                     <option value="Medium">Medium</option>
                     <option value="Hard">Hard</option>
                 </select>
+                <select id="filter-stream" class="filter-select">
+                    <option value="">All Streams</option>
+                </select>
                 <select id="filter-status" class="filter-select">
                     <option value="">All Status</option>
-                    <option value="Solved">Solved</option>
+                    <option value="Solved">Studied</option>
                     <option value="Needs Revision">Needs Revision</option>
                     <option value="Mastered">Mastered</option>
                 </select>
                 <select id="filter-platform" class="filter-select">
-                    <option value="">All Platforms</option>
+                    <option value="">All Sources</option>
                 </select>
                 <select id="sort-questions" class="filter-select">
                     <option value="newest">Newest First</option>
@@ -413,7 +440,7 @@
             </div>
 
             <div class="questions-summary" id="questions-summary">
-                <span>Showing <strong id="showing-count">0</strong> of <strong id="total-count">0</strong> questions</span>
+                <span>Showing <strong id="showing-count">0</strong> of <strong id="total-count">0</strong> topics</span>
                 <div class="bulk-actions">
                     <button class="btn btn-sm btn-outline" id="export-btn" title="Export Data">📥 Export</button>
                     <button class="btn btn-sm btn-outline" id="import-btn" title="Import Data">📤 Import</button>
@@ -422,7 +449,7 @@
             </div>
 
             <div id="questions-list" class="questions-list">
-                <p class="empty-state">No questions found. Start adding questions to track your progress!</p>
+                <p class="empty-state">No topics found. Start adding topics to track your study progress!</p>
             </div>
         </section>
 
@@ -453,9 +480,9 @@
             <h1 class="view-title">Performance Analytics</h1>
 
             <div class="analytics-grid">
-                <!-- Questions Solved Over Time -->
+                <!-- Topics Studied Over Time -->
                 <div class="chart-card">
-                    <h3>Questions Solved Over Time</h3>
+                    <h3>Topics Studied Over Time</h3>
                     <div class="chart-wrapper">
                         <canvas id="chart-solved-over-time"></canvas>
                     </div>
@@ -511,7 +538,7 @@
                     <table class="mastery-table" id="mastery-table">
                         <thead>
                             <tr>
-                                <th>Subject</th>
+                                <th>Subject / Chapter</th>
                                 <th>Total</th>
                                 <th>Mastered</th>
                                 <th>In Progress</th>
@@ -548,7 +575,7 @@
                         <span class="growth-icon">🚨</span>
                         <h3>Priority Revisions</h3>
                     </div>
-                    <p class="growth-desc">Questions most at risk of being forgotten.</p>
+                    <p class="growth-desc">Topics most at risk of being forgotten.</p>
                     <div id="priority-revisions" class="growth-list">
                         <p class="empty-state">No priority items.</p>
                     </div>
@@ -584,8 +611,109 @@
                         <h3>Smart Recommendations</h3>
                     </div>
                     <div id="recommendations" class="recommendations-list">
-                        <p class="empty-state">Add more questions to get personalized recommendations.</p>
+                        <p class="empty-state">Add more topics to get personalized recommendations.</p>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════ VIEW: SYLLABUS ═══════════ -->
+        <section class="view" id="view-syllabus">
+            <h1 class="view-title">📚 Syllabus Manager</h1>
+
+            <!-- Add Syllabus Form -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>➕ Add / Manage Syllabus</h2>
+                </div>
+                <form id="syllabus-form" class="form-card syllabus-form-card">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="syl-stream">Stream / Field *</label>
+                            <select id="syl-stream" required>
+                                <option value="">Select Stream</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Electronics">Electronics & Communication</option>
+                                <option value="Mechanical">Mechanical Engineering</option>
+                                <option value="Civil">Civil Engineering</option>
+                                <option value="Electrical">Electrical Engineering</option>
+                                <option value="Chemical">Chemical Engineering</option>
+                                <option value="Biotechnology">Biotechnology</option>
+                                <option value="Information Technology">Information Technology</option>
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Physics">Physics</option>
+                                <option value="Chemistry">Chemistry</option>
+                                <option value="Biology">Biology</option>
+                                <option value="Commerce">Commerce & Accounting</option>
+                                <option value="Economics">Economics</option>
+                                <option value="Arts">Arts & Humanities</option>
+                                <option value="Law">Law</option>
+                                <option value="Medicine">Medicine & Health Sciences</option>
+                                <option value="Management">Management & MBA</option>
+                                <option value="Design">Design</option>
+                                <option value="Agriculture">Agriculture</option>
+                                <option value="Pharmacy">Pharmacy</option>
+                                <option value="UPSC">UPSC / Civil Services</option>
+                                <option value="SSC">SSC / Govt. Exams</option>
+                                <option value="GATE">GATE</option>
+                                <option value="CAT">CAT / MBA Entrance</option>
+                                <option value="JEE">JEE / Engineering Entrance</option>
+                                <option value="NEET">NEET / Medical Entrance</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-2">
+                            <label for="syl-name">Subject / Course Name *</label>
+                            <input type="text" id="syl-name" placeholder="e.g., Data Structures, Organic Chemistry, Macroeconomics" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="syl-semester">Semester / Year</label>
+                            <input type="text" id="syl-semester" placeholder="e.g., Sem 3, Year 2, 2026">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="syl-exam-date">Exam Date (optional)</label>
+                            <input type="date" id="syl-exam-date">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="syl-topics">Topics / Chapters (one per line) *</label>
+                        <textarea id="syl-topics" rows="8" placeholder="Unit 1: Introduction to Arrays&#10;Unit 2: Linked Lists&#10;Unit 3: Stacks & Queues&#10;Unit 4: Trees&#10;Unit 5: Graphs&#10;&#10;Or paste your college syllabus here..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="syl-notes">Additional Notes</label>
+                        <textarea id="syl-notes" rows="3" placeholder="Textbook references, professor notes, weightage info..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="syl-submit-btn">💾 Save Syllabus</button>
+                        <button type="reset" class="btn btn-outline">Reset</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Syllabus List -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>📋 My Syllabi</h2>
+                    <div class="syllabus-filter-row">
+                        <select id="syl-filter-stream" class="filter-select">
+                            <option value="">All Streams</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="syllabus-list" class="syllabus-list">
+                    <p class="empty-state">No syllabi added yet. Add your course syllabus to track your study progress!</p>
+                </div>
+            </div>
+
+            <!-- Syllabus Progress Overview -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>📊 Overall Syllabus Progress</h2>
+                </div>
+                <div id="syllabus-progress-overview" class="syllabus-progress-overview">
+                    <p class="empty-state">Add syllabi and mark topics as completed to see your progress.</p>
                 </div>
             </div>
         </section>
@@ -605,7 +733,7 @@
                     <div class="goal-header">
                         <div class="goal-title">This Week's Target</div>
                         <div class="goal-status">
-                            <span id="goal-completed">0</span> / <span id="goal-target">10</span> problems
+                            <span id="goal-completed">0</span> / <span id="goal-target">10</span> topics
                         </div>
                     </div>
                     <div class="goal-progress-ring">
@@ -697,7 +825,7 @@
                     <div class="profile-stats">
                         <div class="p-stat">
                             <span class="p-stat-val" id="p-total-questions">0</span>
-                            <span class="p-stat-lbl">Questions</span>
+                            <span class="p-stat-lbl">Topics</span>
                         </div>
                         <div class="p-stat">
                             <span class="p-stat-val" id="p-total-revisions">0</span>
@@ -746,7 +874,7 @@
                 <div class="settings-card">
                     <h3>Revision Settings</h3>
                     <div class="setting-item">
-                        <label for="set-total-cycles">Total Revision Cycles per Question</label>
+                        <label for="set-total-cycles">Total Revision Cycles per Topic</label>
                         <input type="number" id="set-total-cycles" min="1" max="30" value="15">
                     </div>
                     <div class="setting-item">
@@ -813,10 +941,10 @@
                 <div class="settings-card">
                     <h3>About</h3>
                     <p class="settings-about">
-                        <strong>DSA Tracker v1.0</strong><br>
-                        A personal DSA Practice & Revision Tracking Platform with spaced repetition,
-                        gamification, and analytics.<br><br>
-                        Built with vanilla HTML, CSS, and JavaScript. Designed to be scalable to a full-stack application.
+                        <strong>Study Tracker v2.0</strong><br>
+                        A universal Study & Revision Tracking Platform for students of any stream — 
+                        with spaced repetition, syllabus management, gamification, and analytics.<br><br>
+                        Built with vanilla HTML, CSS, and JavaScript. Works for Engineering, Medical, Commerce, Arts, Competitive Exams & more.
                     </p>
                 </div>
             </div>
@@ -875,7 +1003,7 @@
     <div class="modal-overlay" id="detail-modal">
         <div class="modal modal-lg">
             <button class="modal-close" id="detail-modal-close">✕</button>
-            <h2 class="modal-title" id="detail-title">Question Details</h2>
+            <h2 class="modal-title" id="detail-title">Topic Details</h2>
             <div class="modal-body" id="detail-body">
                 <!-- Populated dynamically -->
             </div>

@@ -22,6 +22,7 @@ DSA.App = (() => {
         setupSettings();
         setupExportImport();
         setupMiscUI();
+        setupSyllabus();
 
         // Set default date for form
         document.getElementById('q-date').value = DSA.Store.todayStr();
@@ -117,6 +118,7 @@ DSA.App = (() => {
             case 'revisions': refreshRevisions(); break;
             case 'analytics': refreshAnalytics(); break;
             case 'growth': refreshGrowth(); break;
+            case 'syllabus': refreshSyllabus(); break;
             case 'profile': refreshProfile(); break;
             case 'settings': loadSettings(); break;
         }
@@ -178,7 +180,7 @@ DSA.App = (() => {
         const log = DSA.Store.getActivityLog().slice(0, 10);
 
         if (log.length === 0) {
-            container.innerHTML = '<p class="empty-state">No recent activity yet. Start by adding a question!</p>';
+            container.innerHTML = '<p class="empty-state">No recent activity yet. Start by adding a topic!</p>';
             return;
         }
 
@@ -216,7 +218,7 @@ DSA.App = (() => {
         // Reset button
         document.getElementById('form-reset-btn').addEventListener('click', () => {
             document.getElementById('edit-question-id').value = '';
-            document.getElementById('form-submit-btn').textContent = 'Save Question';
+            document.getElementById('form-submit-btn').textContent = 'Save Topic';
             document.getElementById('form-back-btn').style.display = 'none';
             document.getElementById('q-date').value = DSA.Store.todayStr();
         });
@@ -228,9 +230,10 @@ DSA.App = (() => {
         const editId = document.getElementById('edit-question-id').value;
         const questionData = {
             name: document.getElementById('q-name').value.trim(),
+            stream: document.getElementById('q-stream').value,
             platform: document.getElementById('q-platform').value,
             platformLink: document.getElementById('q-link').value.trim(),
-            subject: document.getElementById('q-subject').value,
+            subject: document.getElementById('q-subject').value.trim(),
             difficulty: document.getElementById('q-difficulty').value,
             dateSolved: document.getElementById('q-date').value,
             timeTaken: parseInt(document.getElementById('q-time').value) || 0,
@@ -244,9 +247,9 @@ DSA.App = (() => {
         if (editId) {
             // Update existing
             DSA.Store.updateQuestion(editId, questionData);
-            showToast('Question updated successfully!', 'success');
+            showToast('Topic updated successfully!', 'success');
             document.getElementById('edit-question-id').value = '';
-            document.getElementById('form-submit-btn').textContent = 'Save Question';
+            document.getElementById('form-submit-btn').textContent = 'Save Topic';
             document.getElementById('form-back-btn').style.display = 'none';
         } else {
             // Add new
@@ -279,6 +282,7 @@ DSA.App = (() => {
         // Update sidebar XP
         updateSidebarXP();
         populateFilterOptions();
+        populateSubjectSuggestions();
     }
 
     // ════════════ QUESTIONS LIST ════════════
@@ -307,6 +311,7 @@ DSA.App = (() => {
                     <div class="q-main">
                         <div class="q-name">${escapeHtml(q.name)}</div>
                         <div class="q-meta">
+                            ${q.stream ? `<span class="q-stream-tag">${q.stream}</span>` : ''}
                             <span>${q.subject}</span>
                             <span>${q.platform}</span>
                             <span>${q.dateSolved}</span>
@@ -332,19 +337,22 @@ DSA.App = (() => {
         const difficulty = document.getElementById('filter-difficulty').value;
         const status = document.getElementById('filter-status').value;
         const platform = document.getElementById('filter-platform').value;
+        const stream = document.getElementById('filter-stream') ? document.getElementById('filter-stream').value : '';
         const sort = document.getElementById('sort-questions').value;
 
         if (search) {
             questions = questions.filter(q =>
                 q.name.toLowerCase().includes(search) ||
                 (q.tags || []).some(t => t.toLowerCase().includes(search)) ||
-                q.subject.toLowerCase().includes(search)
+                q.subject.toLowerCase().includes(search) ||
+                (q.stream || '').toLowerCase().includes(search)
             );
         }
         if (subject) questions = questions.filter(q => q.subject === subject);
         if (difficulty) questions = questions.filter(q => q.difficulty === difficulty);
         if (status) questions = questions.filter(q => q.status === status);
         if (platform) questions = questions.filter(q => q.platform === platform);
+        if (stream) questions = questions.filter(q => q.stream === stream);
 
         // Sort
         switch (sort) {
@@ -363,7 +371,7 @@ DSA.App = (() => {
     }
 
     function setupFilters() {
-        ['search-questions', 'filter-subject', 'filter-difficulty', 'filter-status', 'filter-platform', 'sort-questions'].forEach(id => {
+        ['search-questions', 'filter-subject', 'filter-difficulty', 'filter-status', 'filter-platform', 'filter-stream', 'sort-questions'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener(id === 'search-questions' ? 'input' : 'change', refreshQuestionsList);
         });
@@ -384,14 +392,36 @@ DSA.App = (() => {
             el.value = val;
         });
 
-        // Platforms
+        // Streams
+        const streams = [...new Set(questions.map(q => q.stream).filter(Boolean))].sort();
+        const streamSelect = document.getElementById('filter-stream');
+        if (streamSelect) {
+            const val = streamSelect.value;
+            streamSelect.innerHTML = '<option value="">All Streams</option>' +
+                streams.map(s => `<option value="${s}">${s}</option>`).join('');
+            streamSelect.value = val;
+        }
+
+        // Platforms / Sources
         const platforms = [...new Set(questions.map(q => q.platform))].sort();
         const platformSelect = document.getElementById('filter-platform');
         if (platformSelect) {
             const val = platformSelect.value;
-            platformSelect.innerHTML = '<option value="">All Platforms</option>' +
+            platformSelect.innerHTML = '<option value="">All Sources</option>' +
                 platforms.map(p => `<option value="${p}">${p}</option>`).join('');
             platformSelect.value = val;
+        }
+
+        // Subject suggestions datalist
+        populateSubjectSuggestions();
+    }
+
+    function populateSubjectSuggestions() {
+        const questions = DSA.Store.getQuestions();
+        const subjects = [...new Set(questions.map(q => q.subject).filter(Boolean))].sort();
+        const datalist = document.getElementById('subject-suggestions');
+        if (datalist) {
+            datalist.innerHTML = subjects.map(s => `<option value="${s}">`).join('');
         }
     }
 
@@ -512,7 +542,7 @@ DSA.App = (() => {
         document.getElementById('form-back-btn').addEventListener('click', () => {
             document.getElementById('edit-question-id').value = '';
             document.getElementById('question-form').reset();
-            document.getElementById('form-submit-btn').textContent = 'Save Question';
+            document.getElementById('form-submit-btn').textContent = 'Save Topic';
             document.getElementById('form-back-btn').style.display = 'none';
             switchView('questions');
         });
@@ -611,8 +641,11 @@ DSA.App = (() => {
 
         // Platform icon/emoji
         const platformIcons = {
-            'LeetCode': '🟠', 'CodeStudio': '🔵', 'GeeksforGeeks': '🟢',
-            'HackerRank': '💚', 'Codeforces': '🔴', 'InterviewBit': '🟡', 'Other': '📝'
+            'LeetCode': '🟠', 'GeeksforGeeks': '🟢',
+            'Textbook': '📖', 'Lecture Notes': '📝', 'Online Course': '🌐',
+            'YouTube': '📺', 'Research Paper': '📜', 'Khan Academy': '🎓',
+            'Coursera': '🌐', 'Udemy': '🎥', 'NPTEL': '🏤', 'Class Notes': '📝',
+            'Previous Year Papers': '📄', 'Other': '📝'
         };
         const platformIcon = platformIcons[q.platform] || '📝';
 
@@ -628,6 +661,12 @@ DSA.App = (() => {
         const body = document.getElementById('detail-body');
         body.innerHTML = `
             <div class="detail-grid">
+                ${q.stream ? `
+                <div class="detail-field">
+                    <div class="detail-label">🎓 Stream</div>
+                    <div class="detail-value">${q.stream}</div>
+                </div>
+                ` : ''}
                 <div class="detail-field">
                     <div class="detail-label">📂 Subject</div>
                     <div class="detail-value">${q.subject}</div>
@@ -641,11 +680,11 @@ DSA.App = (() => {
                     </div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">🌐 Platform</div>
+                    <div class="detail-label">🌐 Source</div>
                     <div class="detail-value">${platformIcon} ${q.platform}</div>
                 </div>
                 <div class="detail-field">
-                    <div class="detail-label">📅 Date Solved</div>
+                    <div class="detail-label">📅 Date Studied</div>
                     <div class="detail-value">${q.dateSolved} <span style="font-size:0.75rem;color:var(--text-muted);margin-left:6px;">(${daysSinceText})</span></div>
                 </div>
                 <div class="detail-field">
@@ -690,7 +729,7 @@ DSA.App = (() => {
                 </div>
                 ${q.platformLink ? `
                 <div class="detail-field detail-full">
-                    <div class="detail-label">🔗 Problem Link</div>
+                    <div class="detail-label">🔗 Reference Link</div>
                     <div class="detail-value"><a href="${escapeHtml(q.platformLink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(q.platformLink)}</a></div>
                 </div>
                 ` : ''}
@@ -702,7 +741,7 @@ DSA.App = (() => {
                 ` : ''}
                 ${q.companies ? `
                 <div class="detail-field detail-full">
-                    <div class="detail-label">🏢 Companies</div>
+                    <div class="detail-label">� Exam / Context Tags</div>
                     <div class="detail-tags">${(typeof q.companies === 'string' ? q.companies.split(',') : q.companies).map(c => {
                         const cn = c.trim();
                         const ccls = cn.toLowerCase().replace('facebook','meta');
@@ -714,7 +753,7 @@ DSA.App = (() => {
                 ` : ''}
                 ${q.code ? `
                 <div class="detail-field detail-full">
-                    <div class="detail-label">💻 Solution Code</div>
+                    <div class="detail-label">� Answer / Solution</div>
                     <div class="detail-code-container">
                         <div class="detail-code-header">
                             <span style="font-size:0.72rem;color:var(--text-accent);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Code</span>
@@ -732,7 +771,7 @@ DSA.App = (() => {
                 ` : ''}
                 ${q.notes ? `
                 <div class="detail-field detail-full">
-                    <div class="detail-label">📝 Notes / Approach</div>
+                    <div class="detail-label">📝 Notes / Key Points</div>
                     <div class="detail-notes">${escapeHtml(q.notes)}</div>
                 </div>
                 ` : ''}
@@ -770,6 +809,7 @@ DSA.App = (() => {
         // Pre-fill form
         document.getElementById('edit-question-id').value = q.id;
         document.getElementById('q-name').value = q.name;
+        document.getElementById('q-stream').value = q.stream || '';
         document.getElementById('q-platform').value = q.platform;
         document.getElementById('q-link').value = q.platformLink || '';
         document.getElementById('q-subject').value = q.subject;
@@ -780,13 +820,13 @@ DSA.App = (() => {
         document.getElementById('q-notes').value = q.notes || '';
         document.getElementById('q-important-note').value = q.importantNote || '';
         document.getElementById('q-status').value = q.status;
-        document.getElementById('form-submit-btn').textContent = 'Update Question';
+        document.getElementById('form-submit-btn').textContent = 'Update Topic';
         document.getElementById('form-back-btn').style.display = '';
     }
 
     function handleDetailReset() {
         if (!currentRevisionQuestionId) return;
-        if (!confirm('Reset all revision progress for this question? This cannot be undone.')) return;
+        if (!confirm('Reset all revision progress for this topic? This cannot be undone.')) return;
 
         DSA.RevisionEngine.resetRevisionCycle(currentRevisionQuestionId);
         showToast('Revision cycle reset!', 'info');
@@ -797,10 +837,10 @@ DSA.App = (() => {
 
     function handleDetailDelete() {
         if (!currentRevisionQuestionId) return;
-        if (!confirm('Delete this question permanently? This cannot be undone.')) return;
+        if (!confirm('Delete this topic permanently? This cannot be undone.')) return;
 
         DSA.Store.deleteQuestion(currentRevisionQuestionId);
-        showToast('Question deleted.', 'info');
+        showToast('Topic deleted.', 'info');
         closeDetailModal();
         populateFilterOptions();
         if (currentView === 'questions') refreshQuestionsList();
@@ -943,7 +983,7 @@ DSA.App = (() => {
         if (counts.Hard / total < 0.15) {
             recs.push({
                 icon: '💪',
-                text: `Only <strong>${Math.round(counts.Hard / total * 100)}%</strong> of your questions are Hard. Challenge yourself with more difficult problems.`
+                text: `Only <strong>${Math.round(counts.Hard / total * 100)}%</strong> of your topics are Hard. Challenge yourself with more difficult material.`
             });
         }
 
@@ -1090,7 +1130,7 @@ DSA.App = (() => {
         // Reset data
         document.getElementById('settings-reset-btn').addEventListener('click', () => {
             if (!confirm('⚠️ This will delete ALL your data permanently. Are you absolutely sure?')) return;
-            if (!confirm('This is your last chance. ALL questions, stats, and progress will be lost. Continue?')) return;
+            if (!confirm('This is your last chance. ALL topics, stats, and progress will be lost. Continue?')) return;
             DSA.Store.resetAllData();
             showToast('All data has been reset.', 'info');
             location.reload();
@@ -1128,7 +1168,7 @@ DSA.App = (() => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `dsa-tracker-backup-${DSA.Store.todayStr()}.json`;
+            a.download = `study-tracker-backup-${DSA.Store.todayStr()}.json`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('Data exported successfully!', 'success');
@@ -1250,7 +1290,7 @@ DSA.App = (() => {
         let greeting = 'Good Evening';
         if (hour < 12) greeting = 'Good Morning';
         else if (hour < 17) greeting = 'Good Afternoon';
-        document.getElementById('greeting').textContent = `${greeting}, Coder!`;
+        document.getElementById('greeting').textContent = `${greeting}, Learner!`;
     }
 
     function updateDateDisplay() {
@@ -1302,6 +1342,203 @@ DSA.App = (() => {
         return `${days}d ago`;
     }
 
+    // ════════════ SYLLABUS MANAGEMENT ════════════
+    function setupSyllabus() {
+        const form = document.getElementById('syllabus-form');
+        if (form) {
+            form.addEventListener('submit', handleSyllabusSubmit);
+        }
+
+        // Stream filter for syllabus list
+        const filterEl = document.getElementById('syl-filter-stream');
+        if (filterEl) {
+            filterEl.addEventListener('change', refreshSyllabus);
+        }
+    }
+
+    function handleSyllabusSubmit(e) {
+        e.preventDefault();
+
+        const topicsRaw = document.getElementById('syl-topics').value.trim();
+        const topics = topicsRaw.split('\n').map(t => t.trim()).filter(Boolean).map(t => ({
+            name: t,
+            completed: false,
+            completedDate: null
+        }));
+
+        if (topics.length === 0) {
+            showToast('Please add at least one topic.', 'warning');
+            return;
+        }
+
+        const syllabusData = {
+            stream: document.getElementById('syl-stream').value,
+            name: document.getElementById('syl-name').value.trim(),
+            semester: document.getElementById('syl-semester').value.trim(),
+            examDate: document.getElementById('syl-exam-date').value,
+            topics: topics,
+            notes: document.getElementById('syl-notes').value.trim()
+        };
+
+        DSA.Store.addSyllabus(syllabusData);
+        showToast(`Syllabus "${syllabusData.name}" added with ${topics.length} topics!`, 'success');
+
+        e.target.reset();
+        refreshSyllabus();
+    }
+
+    function refreshSyllabus() {
+        renderSyllabusList();
+        renderSyllabusProgress();
+        populateSyllabusFilters();
+    }
+
+    function populateSyllabusFilters() {
+        const syllabi = DSA.Store.getSyllabi();
+        const streams = [...new Set(syllabi.map(s => s.stream))].sort();
+        const filterEl = document.getElementById('syl-filter-stream');
+        if (filterEl) {
+            const val = filterEl.value;
+            filterEl.innerHTML = '<option value="">All Streams</option>' +
+                streams.map(s => `<option value="${s}">${s}</option>`).join('');
+            filterEl.value = val;
+        }
+    }
+
+    function renderSyllabusList() {
+        const container = document.getElementById('syllabus-list');
+        let syllabi = DSA.Store.getSyllabi();
+
+        // Apply stream filter
+        const streamFilter = document.getElementById('syl-filter-stream');
+        if (streamFilter && streamFilter.value) {
+            syllabi = syllabi.filter(s => s.stream === streamFilter.value);
+        }
+
+        if (syllabi.length === 0) {
+            container.innerHTML = '<p class="empty-state">No syllabi added yet. Add your course syllabus to track your study progress!</p>';
+            return;
+        }
+
+        container.innerHTML = syllabi.map(syl => {
+            const completed = syl.topics.filter(t => t.completed).length;
+            const total = syl.topics.length;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const daysToExam = syl.examDate ? Math.ceil((new Date(syl.examDate) - new Date()) / (1000*60*60*24)) : null;
+
+            return `
+                <div class="syllabus-card" data-id="${syl.id}">
+                    <div class="syllabus-card-header">
+                        <div class="syllabus-card-info">
+                            <h3 class="syllabus-card-title">${escapeHtml(syl.name)}</h3>
+                            <div class="syllabus-card-meta">
+                                <span class="syllabus-stream-badge">${escapeHtml(syl.stream)}</span>
+                                ${syl.semester ? `<span>📅 ${escapeHtml(syl.semester)}</span>` : ''}
+                                ${daysToExam !== null ? `<span class="${daysToExam <= 7 ? 'exam-urgent' : daysToExam <= 30 ? 'exam-soon' : ''}">🎯 Exam in ${daysToExam > 0 ? daysToExam + ' days' : daysToExam === 0 ? 'Today!' : 'Passed'}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="syllabus-card-actions">
+                            <button class="btn btn-sm btn-danger" onclick="DSA.App.deleteSyllabus('${syl.id}')" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="syllabus-progress-bar-container">
+                        <div class="syllabus-progress-bar">
+                            <div class="syllabus-progress-fill" style="width:${pct}%"></div>
+                        </div>
+                        <span class="syllabus-progress-text">${completed}/${total} topics (${pct}%)</span>
+                    </div>
+                    ${syl.notes ? `<div class="syllabus-notes">📝 ${escapeHtml(syl.notes)}</div>` : ''}
+                    <div class="syllabus-topics-list">
+                        ${syl.topics.map((topic, idx) => `
+                            <div class="syllabus-topic-item ${topic.completed ? 'completed' : ''}">
+                                <button class="syl-checkbox ${topic.completed ? 'checked' : ''}"
+                                        onclick="DSA.App.toggleSyllabusTopic('${syl.id}', ${idx})">
+                                    ${topic.completed ? '✓' : ''}
+                                </button>
+                                <span class="syl-topic-name">${escapeHtml(topic.name)}</span>
+                                ${topic.completedDate ? `<span class="syl-topic-date">${topic.completedDate}</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderSyllabusProgress() {
+        const container = document.getElementById('syllabus-progress-overview');
+        const syllabi = DSA.Store.getSyllabi();
+
+        if (syllabi.length === 0) {
+            container.innerHTML = '<p class="empty-state">Add syllabi and mark topics as completed to see your progress.</p>';
+            return;
+        }
+
+        let totalTopics = 0, totalCompleted = 0;
+        const streamProgress = {};
+
+        syllabi.forEach(syl => {
+            totalTopics += syl.topics.length;
+            const completed = syl.topics.filter(t => t.completed).length;
+            totalCompleted += completed;
+
+            if (!streamProgress[syl.stream]) {
+                streamProgress[syl.stream] = { total: 0, completed: 0, subjects: 0 };
+            }
+            streamProgress[syl.stream].total += syl.topics.length;
+            streamProgress[syl.stream].completed += completed;
+            streamProgress[syl.stream].subjects++;
+        });
+
+        const overallPct = totalTopics > 0 ? Math.round((totalCompleted / totalTopics) * 100) : 0;
+
+        container.innerHTML = `
+            <div class="syllabus-overall-stat">
+                <div class="syllabus-overall-ring">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--bg-tertiary)" stroke-width="8"/>
+                        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--accent)" stroke-width="8"
+                                stroke-linecap="round" stroke-dasharray="264"
+                                stroke-dashoffset="${264 - (264 * overallPct / 100)}"
+                                transform="rotate(-90 50 50)"/>
+                    </svg>
+                    <div class="syllabus-overall-pct">${overallPct}%</div>
+                </div>
+                <div class="syllabus-overall-info">
+                    <div class="syllabus-overall-title">Overall Syllabus Completion</div>
+                    <div class="syllabus-overall-detail">${totalCompleted} of ${totalTopics} topics completed across ${syllabi.length} subjects</div>
+                </div>
+            </div>
+            <div class="syllabus-stream-grid">
+                ${Object.entries(streamProgress).map(([stream, data]) => {
+                    const pct = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                    return `
+                        <div class="syllabus-stream-card">
+                            <div class="syllabus-stream-name">${escapeHtml(stream)}</div>
+                            <div class="syllabus-stream-stats">${data.subjects} subject${data.subjects>1?'s':''} · ${data.completed}/${data.total} topics</div>
+                            <div class="syllabus-progress-bar">
+                                <div class="syllabus-progress-fill" style="width:${pct}%"></div>
+                            </div>
+                            <div class="syllabus-stream-pct">${pct}%</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    function toggleSyllabusTopic(syllabusId, topicIndex) {
+        DSA.Store.toggleSyllabusTopic(syllabusId, topicIndex);
+        refreshSyllabus();
+    }
+
+    function deleteSyllabus(syllabusId) {
+        if (!confirm('Delete this syllabus? This cannot be undone.')) return;
+        DSA.Store.deleteSyllabus(syllabusId);
+        showToast('Syllabus deleted.', 'info');
+        refreshSyllabus();
+    }
+
     // ════════════ PUBLIC API ════════════
     return {
         init,
@@ -1315,7 +1552,10 @@ DSA.App = (() => {
         refreshRevisions,
         refreshAnalytics,
         refreshGrowth,
-        refreshProfile
+        refreshProfile,
+        refreshSyllabus,
+        toggleSyllabusTopic,
+        deleteSyllabus
     };
 })();
 

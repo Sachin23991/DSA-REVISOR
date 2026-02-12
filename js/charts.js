@@ -67,7 +67,7 @@ DSA.Charts = (() => {
                 labels,
                 datasets: [
                     {
-                        label: 'Cumulative Solved',
+                        label: 'Cumulative Studied',
                         data: cumulativeData,
                         borderColor: '#6c63ff',
                         backgroundColor: 'rgba(108, 99, 255, 0.1)',
@@ -76,7 +76,7 @@ DSA.Charts = (() => {
                         yAxisID: 'y1'
                     },
                     {
-                        label: 'New Questions',
+                        label: 'New Topics',
                         data: solvedData,
                         borderColor: '#2dd4a8',
                         backgroundColor: 'rgba(45, 212, 168, 0.1)',
