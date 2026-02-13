@@ -248,6 +248,7 @@ DSA.App = (() => {
                 timeTaken: parseInt(document.getElementById('q-time').value) || 0,
                 tags: document.getElementById('q-tags').value.split(',').map(t => t.trim()).filter(Boolean),
                 notes: document.getElementById('q-notes').value.trim(),
+                code: document.getElementById('q-code').value.trim(),
                 importantNote: document.getElementById('q-important-note').value.trim(),
                 status: document.getElementById('q-status').value,
                 initialConfidence: parseInt(document.getElementById('q-confidence').value) || 4
@@ -841,6 +842,7 @@ DSA.App = (() => {
         document.getElementById('q-time').value = q.timeTaken || '';
         document.getElementById('q-tags').value = (q.tags || []).join(', ');
         document.getElementById('q-notes').value = q.notes || '';
+        document.getElementById('q-code').value = q.code || '';
         document.getElementById('q-important-note').value = q.importantNote || '';
         document.getElementById('q-status').value = q.status;
         document.getElementById('form-submit-btn').textContent = 'Update Topic';
