@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════
    Firebase Configuration
-   ⚠️ DO NOT COMMIT THIS FILE TO GITHUB ⚠️
-   Copy config.example.js and add your actual credentials here
+   ✅ Safe for client-side apps - These are PUBLIC identifiers
+   Security is handled by Firebase Security Rules on the server
    ═══════════════════════════════════════════════════════ */
 
 const firebaseConfig = {
