@@ -1,7 +1,7 @@
-# Firebase Configuration (contains sensitive credentials)
-js/config.js
+# Firebase Configuration is now public (safe for client-side apps)
+# Security is handled by Firebase Security Rules
 
-# Environment variables (actual credentials)
+# Environment variables (not used in production for client-side apps)
 .env
 .env.local
 .env.production
