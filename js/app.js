@@ -262,10 +262,10 @@ DSA.App = (() => {
             document.getElementById('form-submit-btn').textContent = 'Save Topic';
             document.getElementById('form-back-btn').style.display = 'none';
         } else {
-            // AddaddStart = performance.now();
+            // Add new question
+            const addStart = performance.now();
             const q = DSA.Store.addQuestion(questionData);
-            console.log(`⏱️ Store.addQuestion: ${(performance.now() - addStart).toFixed(2)}ms`
-            const q = DSA.Store.addQuestion(questionData);
+            console.log(`⏱️ Store.addQuestion: ${(performance.now() - addStart).toFixed(2)}ms`);
 
             // XP for adding question
             const xp = { 'Easy': 5, 'Medium': 10, 'Hard': 15 }[q.difficulty] || 5;
