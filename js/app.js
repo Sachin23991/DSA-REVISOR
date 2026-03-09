@@ -51,6 +51,12 @@ DSA.App = (() => {
                 if (synced) {
                     console.log('☁️ Cloud sync complete — refreshing UI');
                     refreshDashboard();
+                    refreshQuestionsList();
+                    refreshRevisions();
+                    refreshAnalytics();
+                    refreshGrowth();
+                    refreshProfile();
+                    refreshSyllabus();
                     showToast('☁️ Synced with cloud!', 'success');
                 }
             });

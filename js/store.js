@@ -23,7 +23,9 @@ DSA.Store = (() => {
         USER_STATS: 'userStats',
         ACTIVITY_LOG: 'activityLog',
         SETTINGS: 'settings',
-        DAILY_LOG: 'dailyLog'
+        DAILY_LOG: 'dailyLog',
+        CALENDAR_ENTRIES: 'calendarEntries',
+        SYLLABUS: 'syllabus'
     };
 
     // ── Firestore Helpers (fire-and-forget with error logging) ──
@@ -51,18 +53,17 @@ DSA.Store = (() => {
     }
 
     /**
-     * Load all questions from Firestore into localStorage (one-time cloud pull).
+     * Load all data from Firestore into localStorage (one-time cloud pull).
      * Call this on app init to hydrate local cache from cloud.
      */
     function syncFromFirestore() {
         const firestore = getFirestore();
         if (!firestore) return Promise.resolve(false);
 
-        return firestore.collection(FS_COLLECTIONS.QUESTIONS).get()
+        const syncQuestions = firestore.collection(FS_COLLECTIONS.QUESTIONS).get()
             .then(snapshot => {
                 if (snapshot.empty) {
                     console.log('☁️ Firestore: No cloud questions found. Using local data.');
-                    // Push local data to Firestore if we have any
                     const localQuestions = getQuestions();
                     if (localQuestions.length > 0) {
                         console.log(`☁️ Pushing ${localQuestions.length} local questions to Firestore...`);
@@ -70,24 +71,118 @@ DSA.Store = (() => {
                     }
                     return false;
                 }
-
                 const cloudQuestions = [];
                 snapshot.forEach(doc => cloudQuestions.push(doc.data()));
                 console.log(`☁️ Loaded ${cloudQuestions.length} questions from Firestore`);
-
-                // Merge: cloud wins for conflicts (by updatedAt timestamp)
                 const localQuestions = getQuestions();
                 const merged = mergeQuestionSets(localQuestions, cloudQuestions);
                 save(KEYS.QUESTIONS, merged);
-
-                // Push merged set back to Firestore
                 merged.forEach(q => firestoreSet(FS_COLLECTIONS.QUESTIONS, q.id, q));
                 return true;
-            })
-            .catch(err => {
-                console.warn('☁️ Firestore sync failed:', err);
+            });
+
+        const syncUserStats = firestore.collection(FS_COLLECTIONS.USER_STATS).doc('current').get()
+            .then(doc => {
+                if (doc.exists) {
+                    save(KEYS.USER_STATS, doc.data());
+                    console.log('☁️ Loaded user stats from Firestore');
+                    return true;
+                }
+                const localStats = getUserStats();
+                firestoreSet(FS_COLLECTIONS.USER_STATS, 'current', localStats);
                 return false;
             });
+
+        const syncSettings = firestore.collection(FS_COLLECTIONS.SETTINGS).doc('current').get()
+            .then(doc => {
+                if (doc.exists) {
+                    save(KEYS.SETTINGS, doc.data());
+                    console.log('☁️ Loaded settings from Firestore');
+                    return true;
+                }
+                const localSettings = getSettings();
+                firestoreSet(FS_COLLECTIONS.SETTINGS, 'current', localSettings);
+                return false;
+            });
+
+        const syncActivityLog = firestore.collection(FS_COLLECTIONS.ACTIVITY_LOG).doc('current').get()
+            .then(doc => {
+                const docData = doc.exists ? doc.data() : null;
+                if (docData && Array.isArray(docData.entries) && docData.entries.length > 0) {
+                    save(KEYS.ACTIVITY_LOG, docData.entries);
+                    console.log('☁️ Loaded activity log from Firestore');
+                    return true;
+                }
+                const localLog = getActivityLog();
+                if (localLog.length > 0) {
+                    firestoreSet(FS_COLLECTIONS.ACTIVITY_LOG, 'current', { entries: localLog });
+                }
+                return false;
+            });
+
+        const syncDailyLog = firestore.collection(FS_COLLECTIONS.DAILY_LOG).doc('current').get()
+            .then(doc => {
+                const docData = doc.exists ? doc.data() : null;
+                if (docData && typeof docData === 'object' && Object.keys(docData).length > 0) {
+                    save(KEYS.DAILY_LOG, docData);
+                    console.log('☁️ Loaded daily log from Firestore');
+                    return true;
+                }
+                const localLog = getDailyLog();
+                if (Object.keys(localLog).length > 0) {
+                    firestoreSet(FS_COLLECTIONS.DAILY_LOG, 'current', localLog);
+                }
+                return false;
+            });
+
+        const syncCalendarEntries = firestore.collection(FS_COLLECTIONS.CALENDAR_ENTRIES).doc('current').get()
+            .then(doc => {
+                const docData = doc.exists ? doc.data() : null;
+                if (docData && typeof docData === 'object') {
+                    save(KEYS.CALENDAR_ENTRIES, docData);
+                    console.log('☁️ Loaded calendar entries from Firestore');
+                    return true;
+                }
+                const localEntries = getCalendarEntries();
+                if (Object.keys(localEntries).length > 0) {
+                    firestoreSet(FS_COLLECTIONS.CALENDAR_ENTRIES, 'current', localEntries);
+                }
+                return false;
+            });
+
+        const syncSyllabus = firestore.collection(FS_COLLECTIONS.SYLLABUS).get()
+            .then(snapshot => {
+                if (snapshot.empty) {
+                    const localSyllabi = getSyllabi();
+                    if (localSyllabi.length > 0) {
+                        localSyllabi.forEach(s => firestoreSet(FS_COLLECTIONS.SYLLABUS, s.id, s));
+                    }
+                    return false;
+                }
+                const cloudSyllabi = [];
+                snapshot.forEach(doc => cloudSyllabi.push(doc.data()));
+                console.log(`☁️ Loaded ${cloudSyllabi.length} syllabi from Firestore`);
+                // Merge: cloud wins for conflicts (same ID), by updatedAt timestamp
+                const localSyllabi = getSyllabi();
+                const mergedSyllabi = mergeQuestionSets(localSyllabi, cloudSyllabi);
+                save(KEYS.SYLLABUS, mergedSyllabi);
+                mergedSyllabi.forEach(s => firestoreSet(FS_COLLECTIONS.SYLLABUS, s.id, s));
+                return true;
+            });
+
+        const allSyncs = [
+            syncQuestions, syncUserStats, syncSettings,
+            syncActivityLog, syncDailyLog, syncCalendarEntries, syncSyllabus
+        ].map(p => p.catch(err => {
+            console.warn('☁️ Firestore sync partial failure:', err);
+            return false;
+        }));
+
+        return Promise.all(allSyncs).then(results => {
+            const synced = results.some(r => r === true);
+            if (synced) console.log('☁️ Cloud sync complete — all data loaded from Firestore');
+            return synced;
+        });
     }
 
     /**
@@ -253,6 +348,8 @@ DSA.Store = (() => {
         // Keep last 200 activities
         if (log.length > 200) log.length = 200;
         save(KEYS.ACTIVITY_LOG, log);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.ACTIVITY_LOG, 'current', { entries: log });
     }
 
     // ── Daily Log (tracks per-day completions for streaks/heatmap) ──
@@ -268,6 +365,8 @@ DSA.Store = (() => {
         if (type === 'solved') log[dateStr].solved++;
         if (type === 'revised') log[dateStr].revised++;
         save(KEYS.DAILY_LOG, log);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.DAILY_LOG, 'current', log);
         return log;
     }
 
@@ -278,6 +377,8 @@ DSA.Store = (() => {
         }
         log[dateStr].xpEarned += xp;
         save(KEYS.DAILY_LOG, log);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.DAILY_LOG, 'current', log);
     }
 
     // ── Export / Import ──
@@ -302,11 +403,31 @@ DSA.Store = (() => {
                 // ☁️ Sync imported questions to Firestore
                 data.questions.forEach(q => firestoreSet(FS_COLLECTIONS.QUESTIONS, q.id, q));
             }
-            if (data.userStats) save(KEYS.USER_STATS, data.userStats);
-            if (data.activityLog) save(KEYS.ACTIVITY_LOG, data.activityLog);
-            if (data.settings) save(KEYS.SETTINGS, data.settings);
-            if (data.dailyLog) save(KEYS.DAILY_LOG, data.dailyLog);
-            if (data.syllabus) save(KEYS.SYLLABUS, data.syllabus);
+            if (data.userStats) {
+                save(KEYS.USER_STATS, data.userStats);
+                // ☁️ Sync to Firestore
+                firestoreSet(FS_COLLECTIONS.USER_STATS, 'current', data.userStats);
+            }
+            if (data.activityLog) {
+                save(KEYS.ACTIVITY_LOG, data.activityLog);
+                // ☁️ Sync to Firestore
+                firestoreSet(FS_COLLECTIONS.ACTIVITY_LOG, 'current', { entries: data.activityLog });
+            }
+            if (data.settings) {
+                save(KEYS.SETTINGS, data.settings);
+                // ☁️ Sync to Firestore
+                firestoreSet(FS_COLLECTIONS.SETTINGS, 'current', data.settings);
+            }
+            if (data.dailyLog) {
+                save(KEYS.DAILY_LOG, data.dailyLog);
+                // ☁️ Sync to Firestore
+                firestoreSet(FS_COLLECTIONS.DAILY_LOG, 'current', data.dailyLog);
+            }
+            if (data.syllabus) {
+                save(KEYS.SYLLABUS, data.syllabus);
+                // ☁️ Sync imported syllabi to Firestore
+                data.syllabus.forEach(s => firestoreSet(FS_COLLECTIONS.SYLLABUS, s.id, s));
+            }
             return true;
         } catch (e) {
             console.error('Import failed:', e);
@@ -315,12 +436,28 @@ DSA.Store = (() => {
     }
 
     function resetAllData() {
-        // Clear Firestore questions collection
+        // Clear all Firestore collections
         const firestore = getFirestore();
         if (firestore) {
+            // Delete all question documents
             firestore.collection(FS_COLLECTIONS.QUESTIONS).get()
                 .then(snapshot => snapshot.forEach(doc => doc.ref.delete()))
-                .catch(err => console.warn('☁️ Firestore reset failed:', err));
+                .catch(err => console.warn('☁️ Firestore reset (questions) failed:', err));
+            // Delete all syllabus documents
+            firestore.collection(FS_COLLECTIONS.SYLLABUS).get()
+                .then(snapshot => snapshot.forEach(doc => doc.ref.delete()))
+                .catch(err => console.warn('☁️ Firestore reset (syllabus) failed:', err));
+            // Delete single-document collections
+            [
+                [FS_COLLECTIONS.USER_STATS, 'current'],
+                [FS_COLLECTIONS.SETTINGS, 'current'],
+                [FS_COLLECTIONS.ACTIVITY_LOG, 'current'],
+                [FS_COLLECTIONS.DAILY_LOG, 'current'],
+                [FS_COLLECTIONS.CALENDAR_ENTRIES, 'current']
+            ].forEach(([col, docId]) => {
+                firestore.collection(col).doc(docId).delete()
+                    .catch(err => console.warn(`☁️ Firestore reset (${col}) failed:`, err));
+            });
         }
         Object.values(KEYS).forEach(key => localStorage.removeItem(key));
     }
@@ -347,6 +484,8 @@ DSA.Store = (() => {
             lastModified: new Date().toISOString()
         };
         saveCalendarEntries(entries);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.CALENDAR_ENTRIES, 'current', entries);
         return entries[dateKey];
     }
 
@@ -354,6 +493,8 @@ DSA.Store = (() => {
         const entries = getCalendarEntries();
         delete entries[dateKey];
         saveCalendarEntries(entries);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.CALENDAR_ENTRIES, 'current', entries);
     }
 
     // ── Syllabus CRUD ──
@@ -372,6 +513,8 @@ DSA.Store = (() => {
         syllabus.updatedAt = new Date().toISOString();
         syllabi.push(syllabus);
         saveSyllabi(syllabi);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.SYLLABUS, syllabus.id, syllabus);
         addActivity('add', `Added syllabus "${syllabus.name}" (${syllabus.stream})`);
         return syllabus;
     }
@@ -382,12 +525,16 @@ DSA.Store = (() => {
         if (idx === -1) return null;
         syllabi[idx] = { ...syllabi[idx], ...updates, updatedAt: new Date().toISOString() };
         saveSyllabi(syllabi);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.SYLLABUS, id, syllabi[idx]);
         return syllabi[idx];
     }
 
     function deleteSyllabus(id) {
         const syllabi = getSyllabi().filter(s => s.id !== id);
         saveSyllabi(syllabi);
+        // ☁️ Delete from Firestore
+        firestoreDelete(FS_COLLECTIONS.SYLLABUS, id);
         addActivity('delete', 'Deleted a syllabus');
     }
 
@@ -402,6 +549,8 @@ DSA.Store = (() => {
             : null;
         syl.updatedAt = new Date().toISOString();
         saveSyllabi(syllabi);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.SYLLABUS, syllabusId, syl);
         return syl;
     }
 
@@ -419,6 +568,8 @@ DSA.Store = (() => {
         syl.topics.push(newTopic);
         syl.updatedAt = new Date().toISOString();
         saveSyllabi(syllabi);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.SYLLABUS, syllabusId, syl);
         addActivity('add', `Added topic "${topicName}" to ${syl.name}`);
         return syl;
     }
@@ -432,6 +583,8 @@ DSA.Store = (() => {
         syl.topics.splice(topicIndex, 1);
         syl.updatedAt = new Date().toISOString();
         saveSyllabi(syllabi);
+        // ☁️ Sync to Firestore
+        firestoreSet(FS_COLLECTIONS.SYLLABUS, syllabusId, syl);
         addActivity('delete', `Removed topic "${topicName}" from ${syl.name}`);
         return syl;
     }
