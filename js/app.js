@@ -61,6 +61,18 @@ DSA.App = (() => {
                 }
             });
         }
+
+        // Auto-delete old topics if configured
+        const autoDeleteDays = DSA.Store.getSettings().autoDeleteAfterDays || 0;
+        if (autoDeleteDays > 0) {
+            const deleted = DSA.Store.deleteOldTopics(autoDeleteDays);
+            if (deleted > 0) {
+                showToast(`🗑️ Auto-deleted ${deleted} topic(s) older than ${autoDeleteDays} days.`, 'info');
+                refreshDashboard();
+                refreshQuestionsList();
+                refreshRevisions();
+            }
+        }
     }
 
     // ════════════ NAVIGATION ════════════
@@ -1132,7 +1144,7 @@ DSA.App = (() => {
     // ════════════ SETTINGS ════════════
     function setupSettings() {
         // Save on change for each setting
-        ['set-total-cycles', 'set-daily-goal', 'set-intervals'].forEach(id => {
+        ['set-total-cycles', 'set-daily-goal', 'set-intervals', 'set-auto-delete'].forEach(id => {
             document.getElementById(id).addEventListener('change', saveSettingsFromUI);
         });
 
@@ -1175,6 +1187,7 @@ DSA.App = (() => {
         document.getElementById('set-intervals').value = (settings.baseIntervals || []).join(',');
         document.getElementById('set-notifications').checked = settings.notificationsEnabled;
         document.getElementById('set-overdue-alerts').checked = settings.overdueAlerts !== false;
+        document.getElementById('set-auto-delete').value = settings.autoDeleteAfterDays || 0;
     }
 
     function saveSettingsFromUI() {
@@ -1185,6 +1198,8 @@ DSA.App = (() => {
         const intervalsStr = document.getElementById('set-intervals').value;
         const intervals = intervalsStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
         if (intervals.length > 0) settings.baseIntervals = intervals;
+
+        settings.autoDeleteAfterDays = parseInt(document.getElementById('set-auto-delete').value) || 0;
 
         DSA.Store.saveSettings(settings);
         showToast('Settings saved!', 'success');
