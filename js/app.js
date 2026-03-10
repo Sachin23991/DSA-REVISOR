@@ -888,6 +888,10 @@ DSA.App = (() => {
         populateFilterOptions();
         if (currentView === 'questions') refreshQuestionsList();
         if (currentView === 'dashboard') refreshDashboard();
+        if (currentView === 'revisions') refreshRevisions();
+        if (currentView === 'analytics') refreshAnalytics();
+        if (currentView === 'growth') refreshGrowth();
+        if (currentView === 'profile') refreshProfile();
     }
 
     // ════════════ ANALYTICS ════════════
@@ -1174,9 +1178,15 @@ DSA.App = (() => {
         document.getElementById('settings-reset-btn').addEventListener('click', () => {
             if (!confirm('⚠️ This will delete ALL your data permanently. Are you absolutely sure?')) return;
             if (!confirm('This is your last chance. ALL topics, stats, and progress will be lost. Continue?')) return;
-            DSA.Store.resetAllData();
+            const resetPromise = DSA.Store.resetAllData();
             showToast('All data has been reset.', 'info');
-            location.reload();
+            if (resetPromise && typeof resetPromise.then === 'function') {
+                resetPromise
+                    .then(() => location.reload())
+                    .catch(() => location.reload());
+            } else {
+                location.reload();
+            }
         });
     }
 

@@ -437,30 +437,52 @@ DSA.Store = (() => {
     }
 
     function resetAllData() {
-        // Clear all Firestore collections
-        const firestore = getFirestore();
-        if (firestore) {
-            // Delete all question documents
-            firestore.collection(FS_COLLECTIONS.QUESTIONS).get()
-                .then(snapshot => snapshot.forEach(doc => doc.ref.delete()))
-                .catch(err => console.warn('☁️ Firestore reset (questions) failed:', err));
-            // Delete all syllabus documents
-            firestore.collection(FS_COLLECTIONS.SYLLABUS).get()
-                .then(snapshot => snapshot.forEach(doc => doc.ref.delete()))
-                .catch(err => console.warn('☁️ Firestore reset (syllabus) failed:', err));
-            // Delete single-document collections
-            [
-                [FS_COLLECTIONS.USER_STATS, 'current'],
-                [FS_COLLECTIONS.SETTINGS, 'current'],
-                [FS_COLLECTIONS.ACTIVITY_LOG, 'current'],
-                [FS_COLLECTIONS.DAILY_LOG, 'current'],
-                [FS_COLLECTIONS.CALENDAR_ENTRIES, 'current']
-            ].forEach(([col, docId]) => {
-                firestore.collection(col).doc(docId).delete()
-                    .catch(err => console.warn(`☁️ Firestore reset (${col}) failed:`, err));
-            });
-        }
+        // Clear localStorage immediately
         Object.values(KEYS).forEach(key => localStorage.removeItem(key));
+
+        // Clear all Firestore collections and return a Promise
+        const firestore = getFirestore();
+        if (!firestore) return Promise.resolve();
+
+        const deletePromises = [];
+
+        // Delete all question documents
+        deletePromises.push(
+            firestore.collection(FS_COLLECTIONS.QUESTIONS).get()
+                .then(snapshot => {
+                    const batch = firestore.batch();
+                    snapshot.forEach(doc => batch.delete(doc.ref));
+                    return batch.commit();
+                })
+                .catch(err => console.warn('☁️ Firestore reset (questions) failed:', err))
+        );
+
+        // Delete all syllabus documents
+        deletePromises.push(
+            firestore.collection(FS_COLLECTIONS.SYLLABUS).get()
+                .then(snapshot => {
+                    const batch = firestore.batch();
+                    snapshot.forEach(doc => batch.delete(doc.ref));
+                    return batch.commit();
+                })
+                .catch(err => console.warn('☁️ Firestore reset (syllabus) failed:', err))
+        );
+
+        // Delete single-document collections
+        [
+            [FS_COLLECTIONS.USER_STATS, 'current'],
+            [FS_COLLECTIONS.SETTINGS, 'current'],
+            [FS_COLLECTIONS.ACTIVITY_LOG, 'current'],
+            [FS_COLLECTIONS.DAILY_LOG, 'current'],
+            [FS_COLLECTIONS.CALENDAR_ENTRIES, 'current']
+        ].forEach(([col, docId]) => {
+            deletePromises.push(
+                firestore.collection(col).doc(docId).delete()
+                    .catch(err => console.warn(`☁️ Firestore reset (${col}) failed:`, err))
+            );
+        });
+
+        return Promise.all(deletePromises);
     }
 
     // ── Auto-Delete Old Topics ──
