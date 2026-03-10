@@ -206,7 +206,8 @@ DSA.Store = (() => {
         dailyGoal: 5,
         baseIntervals: [0, 1, 3, 7, 14, 21, 30, 45, 60, 90, 120, 150, 180, 210, 240],
         notificationsEnabled: false,
-        overdueAlerts: true
+        overdueAlerts: true,
+        autoDeleteAfterDays: 0
     });
 
     const defaultUserStats = () => ({
@@ -462,6 +463,35 @@ DSA.Store = (() => {
         Object.values(KEYS).forEach(key => localStorage.removeItem(key));
     }
 
+    // ── Auto-Delete Old Topics ──
+    function deleteOldTopics(days) {
+        if (!days || days <= 0) return 0;
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cutoffStr = cutoff.toISOString();
+
+        const questions = getQuestions();
+        const toDelete = questions.filter(q => {
+            const lastTouched = q.updatedAt || q.createdAt;
+            // No timestamp means we cannot determine age — treat as old and include in deletion
+            return !lastTouched || lastTouched < cutoffStr;
+        });
+
+        if (toDelete.length === 0) return 0;
+
+        const remaining = questions.filter(q => {
+            const lastTouched = q.updatedAt || q.createdAt;
+            return lastTouched && lastTouched >= cutoffStr;
+        });
+        saveQuestions(remaining);
+
+        // ☁️ Delete from Firestore
+        toDelete.forEach(q => firestoreDelete(FS_COLLECTIONS.QUESTIONS, q.id));
+
+        addActivity('delete', `Auto-deleted ${toDelete.length} topic(s) older than ${days} day(s)`);
+        return toDelete.length;
+    }
+
     // ── Calendar Entries CRUD ──
     function getCalendarEntries() {
         return load(KEYS.CALENDAR_ENTRIES) || {};
@@ -630,6 +660,7 @@ DSA.Store = (() => {
         exportData,
         importData,
         resetAllData,
+        deleteOldTopics,
         syncFromFirestore,
         todayStr,
         generateId,
