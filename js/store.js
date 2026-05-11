@@ -686,6 +686,8 @@ DSA.Store = (() => {
         syncFromFirestore,
         todayStr,
         generateId,
-        KEYS
+        KEYS,
+        // Alias used by modern-features.js
+        getAllQuestions: getQuestions
     };
 })();

@@ -165,6 +165,10 @@ DSA.App = (() => {
         // Today's revisions quick list
         renderDashboardRevisions(dueToday.slice(0, 5));
 
+        // Topic progress & difficulty distribution widgets
+        DSA.ModernFeatures.updateTopicProgress();
+        DSA.ModernFeatures.updateDifficultyDistribution();
+
         // Heatmap
         DSA.Charts.renderHeatmap();
 
@@ -1267,7 +1271,7 @@ DSA.App = (() => {
     }
 
     function applyTheme(theme) {
-        document.body.classList.add('theme-transitioning');
+        document.body.classList.add('theme-transition');
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('dsa_theme', theme);
 
@@ -1291,13 +1295,13 @@ DSA.App = (() => {
 
         // Update Chart.js colors if charts are visible
         if (window.Chart) {
-            const textColor = theme === 'obsidian' ? '#4a4a5a' : '#9398b0';
-            const gridColor = theme === 'obsidian' ? '#d8d8e0' : '#2a2d45';
+            const textColor = theme === 'obsidian' ? '#4a4a52' : '#9398b0';
+            const gridColor = theme === 'obsidian' ? '#e0e0e8' : '#2a2d45';
             Chart.defaults.color = textColor;
             Chart.defaults.borderColor = gridColor;
         }
 
-        setTimeout(() => document.body.classList.remove('theme-transitioning'), 500);
+        setTimeout(() => document.body.classList.remove('theme-transition'), 500);
     }
 
     function setupThemeToggle() {

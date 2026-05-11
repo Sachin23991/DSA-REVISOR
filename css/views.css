@@ -367,6 +367,109 @@
     .settings-card .setting-item { display: flex; flex-direction: column; padding: var(--space-4) 0; border-bottom: 1px solid var(--border-light); }
     .settings-card .setting-item:last-child { border-bottom: none; }
 
+    /* Theme Selector */
+    .theme-selector {
+        display: flex;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+
+    .theme-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-4);
+        border: 2px solid var(--border);
+        border-radius: var(--radius-xl);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        flex: 1;
+        min-width: 120px;
+        text-align: center;
+    }
+
+    .theme-option:hover {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .theme-option.active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        box-shadow: 0 0 0 3px oklch(65% 0.15 145 / 0.2);
+    }
+
+    .theme-option-preview {
+        width: 80px;
+        height: 50px;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        position: relative;
+    }
+
+    /* Dark theme swatch */
+    .theme-preview-dark {
+        background: oklch(14% 0.01 250);
+        box-shadow: inset 3px 3px 0 oklch(22% 0.015 250),
+                    inset -3px -3px 0 oklch(10% 0.008 250);
+    }
+    .theme-preview-dark::before {
+        content: '';
+        position: absolute;
+        top: 6px; left: 6px;
+        width: 28px; height: 6px;
+        background: oklch(65% 0.15 145);
+        border-radius: 3px;
+    }
+    .theme-preview-dark::after {
+        content: '';
+        position: absolute;
+        top: 18px; left: 6px;
+        width: 18px; height: 4px;
+        background: oklch(55% 0.015 250);
+        border-radius: 2px;
+        box-shadow: 0 6px 0 oklch(50% 0.015 250), 0 12px 0 oklch(48% 0.015 250);
+    }
+
+    /* Obsidian theme swatch */
+    .theme-preview-obsidian {
+        background: oklch(100% 0 0);
+        box-shadow: inset 3px 3px 0 oklch(97% 0 0),
+                    inset -3px -3px 0 oklch(93% 0 0);
+    }
+    .theme-preview-obsidian::before {
+        content: '';
+        position: absolute;
+        top: 6px; left: 6px;
+        width: 28px; height: 6px;
+        background: oklch(65% 0.15 145);
+        border-radius: 3px;
+    }
+    .theme-preview-obsidian::after {
+        content: '';
+        position: absolute;
+        top: 18px; left: 6px;
+        width: 18px; height: 4px;
+        background: oklch(70% 0 0);
+        border-radius: 2px;
+        box-shadow: 0 6px 0 oklch(65% 0 0), 0 12px 0 oklch(60% 0 0);
+    }
+
+    .theme-option-name {
+        font-size: var(--text-sm);
+        font-weight: var(--font-semibold);
+        color: var(--text-primary);
+    }
+
+    .theme-option-desc {
+        font-size: var(--text-xs);
+        color: var(--text-muted);
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .view { padding: var(--space-4); }
