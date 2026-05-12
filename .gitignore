@@ -27,9 +27,7 @@ desktop.ini
 *~
 
 # Build outputs (for C++ compilation)
-cpp/build/*.exe
-cpp/build/*.o
-cpp/build/*.obj
+cpp/build/
 cpp/*.exe
 
 # Logs

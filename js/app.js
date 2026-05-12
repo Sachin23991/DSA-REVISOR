@@ -1205,17 +1205,20 @@ DSA.App = (() => {
     }
 
     function saveSettingsFromUI() {
-        const settings = DSA.Store.getSettings();
-        settings.totalCycles = parseInt(document.getElementById('set-total-cycles').value) || 15;
-        settings.dailyGoal = parseInt(document.getElementById('set-daily-goal').value) || 5;
+        const existingSettings = DSA.Store.getSettings();
+        const settings = {
+            ...existingSettings,
+            totalCycles: document.getElementById('set-total-cycles').value,
+            dailyGoal: document.getElementById('set-daily-goal').value,
+            autoDeleteAfterDays: document.getElementById('set-auto-delete').value
+        };
 
         const intervalsStr = document.getElementById('set-intervals').value;
         const intervals = intervalsStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-        if (intervals.length > 0) settings.baseIntervals = intervals;
-
-        settings.autoDeleteAfterDays = parseInt(document.getElementById('set-auto-delete').value) || 0;
+        settings.baseIntervals = intervals.length > 0 ? intervals : existingSettings.baseIntervals;
 
         DSA.Store.saveSettings(settings);
+        loadSettings();
         showToast('Settings saved!', 'success');
     }
 
