@@ -29,7 +29,7 @@ cd dsa-tracker
 3. Enable **Firestore Database** and **Authentication**
 4. Copy your Firebase configuration
 
-5. **Option A: Using js/config.js (Current Setup)**
+5. **Option A: Using js/config.js (Cloud Sync)**
    ```bash
    # Copy the example config file
    cp js/config.example.js js/config.js
@@ -48,7 +48,9 @@ cd dsa-tracker
    };
    ```
 
-6. **Option B: Using .env file (Alternative)**
+   If you skip this step, the app still works in **local-only mode** using `localStorage`.
+
+6. **Option B: Using .env file (Template / future build setup)**
    ```bash
    # Copy the example env file
    cp .env.example .env
@@ -65,7 +67,7 @@ cd dsa-tracker
    FIREBASE_MEASUREMENT_ID=your_measurement_id
    ```
 
-   **Note**: The current setup uses `js/config.js`. If you prefer `.env`, you'll need to modify the app to load environment variables.
+   **Note**: The current frontend reads `js/config.js` directly. The `.env` file is only a template unless you add a build step to inject environment variables.
 
 ### 3. Run the Application
 
@@ -86,11 +88,11 @@ Then navigate to `http://localhost:8000`
 
 ## 🔐 Security Note
 
-⚠️ **IMPORTANT**: 
-- Never commit `js/config.js` or `.env` to GitHub
-- These files contain your sensitive Firebase credentials
-- Both are already added to `.gitignore` for protection
-- Only commit `.env.example` and `js/config.example.js` (templates with placeholders)
+⚠️ **IMPORTANT**:
+- Use your own Firebase project and security rules before deploying
+- `js/config.js` is optional for local-only usage, but required for cloud sync
+- Keep `.env` out of Git and only commit `.env.example` / `js/config.example.js` templates
+- The app now falls back to local-only mode if Firebase config is missing or unavailable
 
 ## 📁 Project Structure
 

@@ -28,6 +28,13 @@ DSA.Store = (() => {
         SYLLABUS: 'syllabus'
     };
 
+    const DEFAULT_BASE_INTERVALS = Object.freeze([0, 1, 3, 7, 14, 21, 30, 45, 60, 90, 120, 150, 180, 210, 240]);
+    const SETTINGS_LIMITS = Object.freeze({
+        totalCycles: { min: 1, max: 30 },
+        dailyGoal: { min: 1, max: 50 },
+        autoDeleteAfterDays: { min: 0, max: 3650 }
+    });
+
     // ── Firestore Helpers (fire-and-forget with error logging) ──
     function getFirestore() {
         return (typeof db !== 'undefined') ? db : null;
@@ -96,7 +103,7 @@ DSA.Store = (() => {
         const syncSettings = firestore.collection(FS_COLLECTIONS.SETTINGS).doc('current').get()
             .then(doc => {
                 if (doc.exists) {
-                    save(KEYS.SETTINGS, doc.data());
+                    save(KEYS.SETTINGS, normalizeSettings(doc.data()));
                     console.log('☁️ Loaded settings from Firestore');
                     return true;
                 }
@@ -204,7 +211,7 @@ DSA.Store = (() => {
     const defaultSettings = () => ({
         totalCycles: 15,
         dailyGoal: 5,
-        baseIntervals: [0, 1, 3, 7, 14, 21, 30, 45, 60, 90, 120, 150, 180, 210, 240],
+        baseIntervals: [...DEFAULT_BASE_INTERVALS],
         notificationsEnabled: false,
         overdueAlerts: true,
         autoDeleteAfterDays: 0
@@ -238,6 +245,61 @@ DSA.Store = (() => {
         } catch (e) {
             console.error(`Store: Error saving ${key}`, e);
         }
+    }
+
+    function clampInteger(value, fallback, min, max) {
+        const parsed = Number.parseInt(value, 10);
+        if (Number.isNaN(parsed)) return fallback;
+        return Math.min(max, Math.max(min, parsed));
+    }
+
+    function normalizeIntervals(intervals) {
+        const parsed = Array.isArray(intervals)
+            ? intervals
+                .map(value => Number.parseInt(value, 10))
+                .filter(value => Number.isFinite(value) && value >= 0)
+            : [];
+
+        if (parsed.length === 0) return [...DEFAULT_BASE_INTERVALS];
+
+        const seeded = parsed[0] === 0 ? parsed : [0, ...parsed];
+        return seeded.reduce((acc, value, index) => {
+            if (index === 0) {
+                acc.push(0);
+                return acc;
+            }
+
+            acc.push(Math.max(acc[index - 1], value));
+            return acc;
+        }, []);
+    }
+
+    function normalizeSettings(settings = {}) {
+        const defaults = defaultSettings();
+
+        return {
+            totalCycles: clampInteger(
+                settings.totalCycles,
+                defaults.totalCycles,
+                SETTINGS_LIMITS.totalCycles.min,
+                SETTINGS_LIMITS.totalCycles.max
+            ),
+            dailyGoal: clampInteger(
+                settings.dailyGoal,
+                defaults.dailyGoal,
+                SETTINGS_LIMITS.dailyGoal.min,
+                SETTINGS_LIMITS.dailyGoal.max
+            ),
+            baseIntervals: normalizeIntervals(settings.baseIntervals),
+            notificationsEnabled: Boolean(settings.notificationsEnabled),
+            overdueAlerts: settings.overdueAlerts !== false,
+            autoDeleteAfterDays: clampInteger(
+                settings.autoDeleteAfterDays,
+                defaults.autoDeleteAfterDays,
+                SETTINGS_LIMITS.autoDeleteAfterDays.min,
+                SETTINGS_LIMITS.autoDeleteAfterDays.max
+            )
+        };
     }
 
     // ── Question CRUD (localStorage + Firestore) ──
@@ -323,13 +385,14 @@ DSA.Store = (() => {
 
     // ── Settings (localStorage + Firestore) ──
     function getSettings() {
-        return load(KEYS.SETTINGS, defaultSettings);
+        return normalizeSettings(load(KEYS.SETTINGS, defaultSettings));
     }
 
     function saveSettings(settings) {
-        save(KEYS.SETTINGS, settings);
+        const normalizedSettings = normalizeSettings(settings);
+        save(KEYS.SETTINGS, normalizedSettings);
         // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.SETTINGS, 'current', settings);
+        firestoreSet(FS_COLLECTIONS.SETTINGS, 'current', normalizedSettings);
     }
 
     // ── Activity Log ──
@@ -415,9 +478,7 @@ DSA.Store = (() => {
                 firestoreSet(FS_COLLECTIONS.ACTIVITY_LOG, 'current', { entries: data.activityLog });
             }
             if (data.settings) {
-                save(KEYS.SETTINGS, data.settings);
-                // ☁️ Sync to Firestore
-                firestoreSet(FS_COLLECTIONS.SETTINGS, 'current', data.settings);
+                saveSettings(data.settings);
             }
             if (data.dailyLog) {
                 save(KEYS.DAILY_LOG, data.dailyLog);
@@ -686,6 +747,8 @@ DSA.Store = (() => {
         syncFromFirestore,
         todayStr,
         generateId,
-        KEYS
+        KEYS,
+        // Alias used by modern-features.js
+        getAllQuestions: getQuestions
     };
 })();

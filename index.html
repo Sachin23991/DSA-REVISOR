@@ -1029,15 +1029,51 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     
-    <!-- Firebase Configuration (loaded from external file) -->
+    <!-- Firebase Configuration (optional for local-only mode) -->
     <script src="js/config.js"></script>
     <script>
-        // Initialize Firebase
-        const firebaseApp = firebase.initializeApp(firebaseConfig);
-        const analytics = firebase.analytics();
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        console.log('🔥 Firebase initialized — Firestore, Auth & Analytics ready');
+        let firebaseApp = null;
+        let analytics = null;
+        let db = null;
+        let auth = null;
+
+        (() => {
+            const hasFirebaseSdk = typeof firebase !== 'undefined';
+            const hasFirebaseConfig =
+                typeof firebaseConfig !== 'undefined' &&
+                firebaseConfig &&
+                typeof firebaseConfig === 'object';
+
+            if (!hasFirebaseSdk || !hasFirebaseConfig) {
+                console.info('🔥 Firebase config not found — running in local-only mode.');
+                return;
+            }
+
+            try {
+                firebaseApp = firebase.apps && firebase.apps.length
+                    ? firebase.app()
+                    : firebase.initializeApp(firebaseConfig);
+
+                if (firebase.firestore) db = firebase.firestore();
+                if (firebase.auth) auth = firebase.auth();
+
+                if (firebase.analytics && window.location.protocol !== 'file:') {
+                    try {
+                        analytics = firebase.analytics();
+                    } catch (error) {
+                        console.warn('🔥 Firebase Analytics unavailable:', error);
+                    }
+                }
+
+                console.log('🔥 Firebase initialized — Firestore and Auth ready');
+            } catch (error) {
+                console.warn('🔥 Firebase initialization skipped. Running in local-only mode.', error);
+                firebaseApp = null;
+                analytics = null;
+                db = null;
+                auth = null;
+            }
+        })();
     </script>
 
     <!-- Scripts (order matters) -->
