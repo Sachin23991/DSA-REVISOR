@@ -44,10 +44,7 @@ DSA.RevisionEngine = (() => {
 
         // Calculate from the last revision date or date solved
         const fromDate = question.lastRevisionDate || question.dateSolved || DSA.Store.todayStr();
-        const nextDate = new Date(fromDate);
-        nextDate.setDate(nextDate.getDate() + adjustedInterval);
-
-        return nextDate.toISOString().split('T')[0];
+        return DSA.Store.addDays(fromDate, adjustedInterval);
     }
 
     /**
@@ -69,7 +66,7 @@ DSA.RevisionEngine = (() => {
     function completeRevision(questionId, quality, timeTaken, notes) {
         const settings = DSA.Store.getSettings();
         const question = DSA.Store.getQuestionById(questionId);
-        if (!question) return null;
+        if (!question || question.status === 'Not Started' || question.status === 'Mastered') return null;
 
         const today = DSA.Store.todayStr();
 
@@ -90,7 +87,7 @@ DSA.RevisionEngine = (() => {
         let newCycle = question.revisionCycle + 1;
         const totalCycles = settings.totalCycles || 15;
 
-        // If quality < 3, don't advance cycle (failed recall)
+        // Failed recall moves the question back one cycle.
         if (quality < 3) {
             newCycle = Math.max(0, question.revisionCycle - 1);
         }
@@ -104,6 +101,8 @@ DSA.RevisionEngine = (() => {
             newStatus = 'Mastered';
         } else if (quality < 3) {
             newStatus = 'Needs Revision';
+        } else {
+            newStatus = 'Solved';
         }
 
         // Calculate XP
@@ -124,21 +123,14 @@ DSA.RevisionEngine = (() => {
         const tempQuestion = { ...question, ...updates };
         updates.nextRevisionDate = calculateNextDate(tempQuestion, settings);
 
-        // Save question
-        DSA.Store.updateQuestion(questionId, updates);
-
-        // Log activity
-        DSA.Store.logDailyActivity(today, 'revised');
-        DSA.Store.addDailyXP(today, xp);
-        DSA.Store.addActivity('revision', `Revised "${question.name}" (Cycle ${newCycle}/${totalCycles}, Quality: ${quality}/5)`);
-
-        // Update user stats
-        const userStats = DSA.Store.getUserStats();
-        userStats.totalRevisions = (userStats.totalRevisions || 0) + 1;
-        DSA.Store.saveUserStats(userStats);
+        const revised = DSA.Store.commitRevision(
+            questionId, updates, xp,
+            `Revised "${question.name}" (Cycle ${newCycle}/${totalCycles}, Quality: ${quality}/5)`
+        );
+        if (!revised) return null;
 
         return {
-            question: { ...question, ...updates },
+            question: revised,
             xpEarned: xp,
             newCycle,
             totalCycles,
@@ -169,7 +161,7 @@ DSA.RevisionEngine = (() => {
     function getDueToday() {
         const today = DSA.Store.todayStr();
         return DSA.Store.getQuestions().filter(q => {
-            if (q.status === 'Mastered') return false;
+            if (q.status === 'Mastered' || q.status === 'Not Started') return false;
             if (!q.nextRevisionDate) return false;
             return q.nextRevisionDate <= today;
         });
@@ -181,7 +173,7 @@ DSA.RevisionEngine = (() => {
     function getOverdue() {
         const today = DSA.Store.todayStr();
         return DSA.Store.getQuestions().filter(q => {
-            if (q.status === 'Mastered') return false;
+            if (q.status === 'Mastered' || q.status === 'Not Started') return false;
             if (!q.nextRevisionDate) return false;
             return q.nextRevisionDate < today;
         });
@@ -193,7 +185,7 @@ DSA.RevisionEngine = (() => {
     function getDueExactlyToday() {
         const today = DSA.Store.todayStr();
         return DSA.Store.getQuestions().filter(q => {
-            if (q.status === 'Mastered') return false;
+            if (q.status === 'Mastered' || q.status === 'Not Started') return false;
             return q.nextRevisionDate === today;
         });
     }
@@ -202,14 +194,11 @@ DSA.RevisionEngine = (() => {
      * Get upcoming revisions (next 7 days, excluding today).
      */
     function getUpcoming(days = 7) {
-        const today = new Date();
-        const futureDate = new Date();
-        futureDate.setDate(today.getDate() + days);
-        const todayStr = today.toISOString().split('T')[0];
-        const futureStr = futureDate.toISOString().split('T')[0];
+        const todayStr = DSA.Store.todayStr();
+        const futureStr = DSA.Store.addDays(todayStr, days);
 
         return DSA.Store.getQuestions().filter(q => {
-            if (q.status === 'Mastered') return false;
+            if (q.status === 'Mastered' || q.status === 'Not Started') return false;
             if (!q.nextRevisionDate) return false;
             return q.nextRevisionDate > todayStr && q.nextRevisionDate <= futureStr;
         }).sort((a, b) => a.nextRevisionDate.localeCompare(b.nextRevisionDate));
@@ -221,7 +210,7 @@ DSA.RevisionEngine = (() => {
     function getCompletedToday() {
         const today = DSA.Store.todayStr();
         return DSA.Store.getQuestions().filter(q => {
-            return q.lastRevisionDate === today;
+            return q.lastRevisionDate === today || q.revisionHistory?.some(entry => entry.date === today);
         });
     }
 
@@ -230,7 +219,7 @@ DSA.RevisionEngine = (() => {
      */
     function getTotalPending() {
         return DSA.Store.getQuestions().filter(q => {
-            return q.status !== 'Mastered' && q.nextRevisionDate;
+            return q.status !== 'Mastered' && q.status !== 'Not Started' && q.nextRevisionDate;
         }).length;
     }
 
@@ -239,7 +228,7 @@ DSA.RevisionEngine = (() => {
      * Higher = more urgent.
      */
     function getPriorityScore(question) {
-        const today = new Date();
+        const today = new Date(DSA.Store.todayStr());
         const dueDate = new Date(question.nextRevisionDate);
         const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
 
@@ -267,9 +256,8 @@ DSA.RevisionEngine = (() => {
      * Reset revision cycle for a question.
      */
     function resetRevisionCycle(questionId) {
-        const settings = DSA.Store.getSettings();
         const question = DSA.Store.getQuestionById(questionId);
-        if (!question) return;
+        if (!question || question.status === 'Not Started') return null;
 
         const updates = {
             revisionCycle: 0,
@@ -279,8 +267,10 @@ DSA.RevisionEngine = (() => {
             nextRevisionDate: DSA.Store.todayStr()
         };
 
-        DSA.Store.updateQuestion(questionId, updates);
-        DSA.Store.addActivity('reset', `Reset revisions for "${question.name}"`);
+        return DSA.Store.updateQuestion(questionId, updates, {
+            type: 'reset',
+            text: `Reset the revision cycle for "${question.name}"`
+        });
     }
 
     /**
@@ -288,7 +278,7 @@ DSA.RevisionEngine = (() => {
      */
     function getWeakSubjects() {
         const questions = DSA.Store.getQuestions();
-        const subjectMap = {};
+        const subjectMap = Object.create(null);
 
         questions.forEach(q => {
             if (!subjectMap[q.subject]) {
@@ -300,22 +290,23 @@ DSA.RevisionEngine = (() => {
             if (q.status === 'Mastered') s.mastered++;
 
             (q.revisionHistory || []).forEach(r => {
-                s.qualitySum += r.quality;
+                const quality = Number(r.quality);
+                if (!Number.isFinite(quality) || quality < 1 || quality > 5) return;
+                s.qualitySum += quality;
                 s.qualityCount++;
             });
         });
 
         return Object.entries(subjectMap)
+            .filter(([, data]) => data.qualityCount > 0)
             .map(([name, data]) => ({
                 name,
                 total: data.total,
                 avgEF: data.total > 0 ? data.efSum / data.total : 2.5,
-                avgQuality: data.qualityCount > 0 ? data.qualitySum / data.qualityCount : 3,
+                avgQuality: data.qualitySum / data.qualityCount,
                 masteryPercent: data.total > 0 ? Math.round((data.mastered / data.total) * 100) : 0,
                 // Lower score = weaker
-                strengthScore: data.qualityCount > 0
-                    ? Math.round(((data.qualitySum / data.qualityCount) / 5) * 100)
-                    : 50
+                strengthScore: Math.round(data.qualitySum / data.qualityCount / 5 * 100)
             }))
             .sort((a, b) => a.strengthScore - b.strengthScore);
     }
@@ -330,23 +321,49 @@ DSA.RevisionEngine = (() => {
             .slice(0, limit);
     }
 
-    /**
-     * Calculate productivity score for today.
-     * Based on: completed revisions vs due, streak, XP earned.
-     */
+    function getStudyActivity(today = DSA.Store.todayStr()) {
+        const activity = new Map();
+
+        function activityFor(date) {
+            if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return null;
+            if (!activity.has(date)) activity.set(date, { practiced: 0, reviewed: 0 });
+            return activity.get(date);
+        }
+
+        for (const question of DSA.Store.getQuestions()) {
+            // Older logs recorded when a question was entered. The question holds the chosen study date.
+            const practice = question.status !== 'Not Started' && activityFor(question.dateSolved);
+            if (practice) practice.practiced++;
+
+            const history = question.revisionHistory || [];
+            for (const entry of history) {
+                const review = activityFor(entry.date);
+                if (review) review.reviewed++;
+            }
+            if (question.lastRevisionDate && !history.some(entry => entry.date === question.lastRevisionDate)) {
+                const review = activityFor(question.lastRevisionDate);
+                if (review) review.reviewed++;
+            }
+        }
+
+        // The review log preserves activity when questions are deleted. Histories fill gaps in older backups.
+        for (const [date, log] of Object.entries(DSA.Store.getDailyLog() || {})) {
+            const loggedReviews = Number(log?.revised);
+            if (!Number.isSafeInteger(loggedReviews) || loggedReviews <= 0) continue;
+            const review = activityFor(date);
+            if (review) review.reviewed = Math.max(review.reviewed, loggedReviews);
+        }
+        return activity;
+    }
+
+    function getDailyReviewProgress(today = DSA.Store.todayStr(), activity = getStudyActivity(today)) {
+        const { dailyGoal } = DSA.Store.getSettings();
+        const completed = activity.get(today)?.reviewed || 0;
+        return { completed, goal: dailyGoal, percentage: Math.min(100, Math.round(completed / dailyGoal * 100)) };
+    }
+
     function getProductivityScore() {
-        const due = getDueToday().length;
-        const completed = getCompletedToday().length;
-        const settings = DSA.Store.getSettings();
-        const goal = settings.dailyGoal || 5;
-
-        if (due === 0 && completed === 0) return 100; // Nothing to do = perfect
-        if (due === 0) return 100;
-
-        const completionRate = Math.min(1, completed / Math.max(1, due));
-        const goalRate = Math.min(1, completed / goal);
-
-        return Math.round((completionRate * 0.7 + goalRate * 0.3) * 100);
+        return getDailyReviewProgress().percentage;
     }
 
     // ── Public API ──
@@ -365,6 +382,8 @@ DSA.RevisionEngine = (() => {
         resetRevisionCycle,
         getWeakSubjects,
         getPriorityRevisions,
+        getStudyActivity,
+        getDailyReviewProgress,
         getProductivityScore
     };
 })();

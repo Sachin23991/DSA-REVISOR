@@ -10,8 +10,8 @@ A comprehensive DSA (Data Structures & Algorithms) practice and revision trackin
 - 📊 **Analytics** - Visualize your progress with interactive charts
 - 🧠 **Growth Intel** - Insights on your learning patterns and weak areas
 - 🏆 **Profile & Achievements** - Track milestones and earn badges
-- ☁️ **Cloud Sync** - Firebase integration for data persistence
-- 🎨 **Multiple Themes** - Dark and Obsidian themes
+- 💾 **Local data and backups** - Keep progress in your browser and export or restore it as JSON
+- 🎨 **Appearance** - Light and dark themes
 
 ## 🛠️ Setup Instructions
 
@@ -22,77 +22,19 @@ git clone https://github.com/yourusername/dsa-tracker.git
 cd dsa-tracker
 ```
 
-### 2. Firebase Configuration
+### 2. Run the Application
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project or use an existing one
-3. Enable **Firestore Database** and **Authentication**
-4. Copy your Firebase configuration
-
-5. **Option A: Using js/config.js (Cloud Sync)**
-   ```bash
-   # Copy the example config file
-   cp js/config.example.js js/config.js
-   ```
-
-   Then edit `js/config.js` and add your Firebase credentials:
-   ```javascript
-   const firebaseConfig = {
-       apiKey: "your_actual_api_key",
-       authDomain: "your_project.firebaseapp.com",
-       projectId: "your_project_id",
-       storageBucket: "your_project.firebasestorage.app",
-       messagingSenderId: "your_sender_id",
-       appId: "your_app_id",
-       measurementId: "your_measurement_id"
-   };
-   ```
-
-   If you skip this step, the app still works in **local-only mode** using `localStorage`.
-
-6. **Option B: Using .env file (Template / future build setup)**
-   ```bash
-   # Copy the example env file
-   cp .env.example .env
-   ```
-
-   Then edit `.env` with your Firebase credentials:
-   ```env
-   FIREBASE_API_KEY=your_actual_api_key
-   FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   FIREBASE_PROJECT_ID=your_project_id
-   FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
-   FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   FIREBASE_APP_ID=your_app_id
-   FIREBASE_MEASUREMENT_ID=your_measurement_id
-   ```
-
-   **Note**: The current frontend reads `js/config.js` directly. The `.env` file is only a template unless you add a build step to inject environment variables.
-
-### 3. Run the Application
-
-Simply open `index.html` in your browser or use a local server:
+Serve the project folder locally:
 
 ```bash
-# Using Python
-python -m http.server 8000
-
-# Using Node.js (http-server)
-npx http-server
-
-# Using PHP
-php -S localhost:8000
+python -m http.server 8000 --bind 127.0.0.1
 ```
 
-Then navigate to `http://localhost:8000`
+Open [Study Tracker on your computer](http://127.0.0.1:8000).
 
-## 🔐 Security Note
+## Data and Backups
 
-⚠️ **IMPORTANT**:
-- Use your own Firebase project and security rules before deploying
-- `js/config.js` is optional for local-only usage, but required for cloud sync
-- Keep `.env` out of Git and only commit `.env.example` / `js/config.example.js` templates
-- The app now falls back to local-only mode if Firebase config is missing or unavailable
+Study data is stored in the current browser and site address. Use **Settings → Export Data** to save a JSON backup. **Import Data** replaces the sections present in the file, so export a current backup before restoring an older one. Import a backup to move your progress to another browser or site address.
 
 ## 📁 Project Structure
 
@@ -109,10 +51,9 @@ dsa-tracker/
 │   ├── responsive.css      # Responsive design
 │   └── utilities.css       # Utility classes
 ├── js/                     # JavaScript modules
-│   ├── config.js           # Firebase config (not committed)
-│   ├── config.example.js   # Config template
 │   ├── app.js              # Main app controller
-│   ├── store.js            # Data storage & Firebase sync
+│   ├── store.js            # Browser-local data store
+│   ├── practice-plan.js    # Bulk practice plans
 │   ├── revision-engine.js  # Spaced repetition logic
 │   ├── gamification.js     # XP, levels, badges
 │   ├── charts.js           # Chart visualizations
@@ -122,12 +63,12 @@ dsa-tracker/
 │   ├── include/            # Header files
 │   └── Makefile            # Build configuration
 ├── .gitignore              # Git ignore file
-├── .env                    # Environment variables (not committed)
-├── .env.example            # Environment variables template
 └── README.md               # This file
 ```
 
 ## 🎯 Usage
+
+Open **Practice Plan** and paste a list with one question per line. You can include a heading such as `Topic: Arrays`, a numbered list, links, or rows copied from a table. The plan schedules five questions per day. Use **Mark done**, **Mark revised**, or move an item to tomorrow. **Revisions → Practice Queue** shows scheduled and overdue work. Links are kept when they are present in the copied text or clipboard.
 
 1. **Add Questions** - Click "+ Quick Add" or navigate to "Add Question"
 2. **Track Revisions** - View due revisions in the "Revisions" tab
@@ -140,22 +81,21 @@ dsa-tracker/
 Edit settings in the app or modify these in `js/store.js`:
 
 - **Total Revision Cycles**: Number of revisions per question (default: 15)
-- **Daily Revision Goal**: Target revisions per day (default: 5)
+- **Daily review goal** measures reviews completed today against your target. The default is five reviews. Practiced questions are counted separately.
 - **Base Intervals**: Spaced repetition intervals in days (customizable)
+
+The app serves Chart.js 4.5.1 and the Latin Inter and Manrope fonts from local files. Their licenses are included in `js/vendor/` and `assets/fonts/`.
 
 ## 🌐 Deployment
 
 ### GitHub Pages
-1. Push your code to GitHub (config.js will be ignored)
-2. Go to Settings → Pages
-3. Select branch and deploy
+1. Go to Settings → Pages
+2. Select branch and deploy
 
 ### Netlify/Vercel
 1. Connect your repository
-2. Add environment variables in the dashboard
-3. Deploy
+2. Deploy the static files
 
-**Note**: For production, consider using environment variables through your hosting provider instead of committing config files.
 
 ## 🤝 Contributing
 

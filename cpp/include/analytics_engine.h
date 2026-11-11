@@ -33,7 +33,7 @@ struct TopicStats {
         return total > 0 ? static_cast<double>(mastered) / total * 100.0 : 0.0;
     }
     double completionRate() const {
-        return total > 0 ? static_cast<double>(solved + mastered) / total * 100.0 : 0.0;
+        return total > 0 ? static_cast<double>(solved) / total * 100.0 : 0.0;
     }
 };
 
@@ -107,6 +107,7 @@ public:
 
     static vector<TopicStats> getTopicStats(const vector<Question>& questions) {
         unordered_map<string, TopicStats> map;
+        unordered_map<string, int> revisedCounts;
 
         for (const auto& q : questions) {
             auto& ts = map[q.subject];
@@ -120,14 +121,16 @@ public:
                 ts.mastered++;
             if (q.status == QuestionStatus::NEEDS_REVISION)
                 ts.needsRevision++;
-            if (q.revisionCycle > 0)
+            if (q.revisionCycle > 0) {
                 ts.avgEaseFactor += q.easeFactor;
+                revisedCounts[q.subject]++;
+            }
         }
 
         vector<TopicStats> result;
         for (auto& kv : map) {
             auto& ts = kv.second;
-            int revised = ts.solved;  // approximate
+            int revised = revisedCounts[kv.first];
             if (revised > 0)
                 ts.avgEaseFactor /= revised;
             else

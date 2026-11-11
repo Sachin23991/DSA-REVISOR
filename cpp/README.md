@@ -1,15 +1,15 @@
-# DSA Tracker — C++ Backend Engine
+# DSA Tracker — Standalone C++ Demos
 
 ## Overview
 
-This directory contains the **C++ backend engine** for the Work-Tracker DSA question recorder. It implements core **Data Structures and Algorithms (DSA)** from scratch to power the question management, revision scheduling, search, and analytics features of the application.
+This directory contains standalone C++ demos of data structures and algorithms for question management, revision scheduling, search, and analytics. The browser app implements its study workflow separately in JavaScript.
 
 ## Data Structures & Algorithms Implemented
 
 | # | Data Structure / Algorithm | File | Purpose |
 |---|---------------------------|------|---------|
 | 1 | **Hash Map** (Separate Chaining) | `include/question_hashmap.h` | O(1) question storage & retrieval by ID |
-| 2 | **Min-Heap** (Binary Heap / Priority Queue) | `include/revision_heap.h` | Priority-based revision scheduling |
+| 2 | **Max-Heap** (Binary Heap / Priority Queue) | `include/revision_heap.h` | Highest-urgency revisions first |
 | 3 | **Trie** (Prefix Tree) | `include/question_trie.h` | Search autocomplete & fuzzy matching |
 | 4 | **Graph** (Adjacency List DAG) | `include/topic_graph.h` | Topic dependency modeling |
 | 5 | **BFS** (Breadth-First Search) | `include/topic_graph.h` | Level-order topic traversal |
@@ -34,6 +34,7 @@ This directory contains the **C++ backend engine** for the Work-Tracker DSA ques
 │ HashMap Insert/Get    │ O(1) average     │ O(n + m)     │
 │ Heap Push/Pop         │ O(log n)         │ O(n)         │
 │ Heap Build (Floyd's)  │ O(n)             │ O(n)         │
+│ Heap Top K            │ O(k log k)       │ O(k) extra   │
 │ Trie Insert/Search    │ O(L)             │ O(N × L)     │
 │ Trie Autocomplete     │ O(L + K)         │ O(K)         │
 │ Trie Fuzzy Search     │ O(N × L) pruned  │ O(L × T)     │
@@ -53,7 +54,7 @@ cpp/
 ├── include/
 │   ├── dsa_core.h            # Core types: Question, Topic, enums, utilities
 │   ├── question_hashmap.h    # Hash Map with separate chaining (djb2 hash)
-│   ├── revision_heap.h       # Binary Min-Heap priority queue
+│   ├── revision_heap.h       # Binary Max-Heap priority queue
 │   ├── question_trie.h       # Trie with autocomplete & fuzzy search
 │   ├── topic_graph.h         # DAG with BFS, DFS, topological sort
 │   ├── sorting_engine.h      # 5 sorting algorithms + smart selection
@@ -100,7 +101,7 @@ dsa_tracker.exe
 | C++ DSA Component | Frontend Feature (JS) | File |
 |-------------------|-----------------------|------|
 | Hash Map | `localStorage` question CRUD | `js/store.js` |
-| Min-Heap | Revision due date scheduling | `js/revision-engine.js` |
+| Max-Heap | Revision priority scoring | `js/revision-engine.js` |
 | Trie | Question search & filter | `js/app.js` (filter UI) |
 | Topic Graph | Topic dependency visualization | `js/charts.js` |
 | Sorting Algorithms | Question list sorting | `js/app.js` (sort controls) |
@@ -113,10 +114,11 @@ dsa_tracker.exe
 - Dynamic resizing when load factor > 0.75
 - Collision tracking and distribution analysis
 
-### 2. Min-Heap Priority Queue
+### 2. Max-Heap Priority Queue
 - **Floyd's build-heap** algorithm — O(n) construction
 - **Sift-up / Sift-down** operations for heap maintenance
-- Priority scoring based on overdue days, difficulty, and ease factor
+- The queue includes questions scheduled for today and overdue questions. It ranks higher urgency scores first, even when some due questions have a negative score.
+- The revision report shows today's questions and overdue questions in separate counts.
 
 ### 3. Trie (Prefix Tree)
 - Case-insensitive search using character normalization

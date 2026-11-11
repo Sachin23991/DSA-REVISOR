@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════
    DSA Tracker — Main Driver Program
    
-   Demonstrates all DSA backends:
+   Demonstrates the standalone C++ implementations:
    1. Hash Map    — O(1) question storage & lookup
-   2. Min-Heap    — Revision priority scheduling
+   2. Max-Heap    — Revision priority scheduling
    3. Trie        — Search & autocomplete
    4. DAG         — Topic dependency graph
    5. Sorting     — 5 sorting algorithms
@@ -142,13 +142,13 @@ void demoHashMap(const vector<Question>& questions) {
 }
 
 // ═════════════════════════════════════════════════════════════════
-//  DEMO 2 — Min-Heap: Revision Priority Queue
+//  DEMO 2 — Max-Heap: Revision Priority Queue
 // ═════════════════════════════════════════════════════════════════
 
 void demoHeap(const vector<Question>& questions) {
     cout << "\n\n"
          << "╔══════════════════════════════════════════════════════════╗\n"
-         << "║     DEMO 2: MIN-HEAP — Revision Priority Queue         ║\n"
+         << "║     DEMO 2: MAX-HEAP — Revision Priority Queue         ║\n"
          << "╚══════════════════════════════════════════════════════════╝\n";
 
     string today = todayStr();
@@ -311,7 +311,7 @@ void demoRevisionEngine(vector<Question>& questions) {
     cout << "    After:  EF=" << result.newEaseFactor
          << " Cycle=" << result.newCycle
          << " Status=" << statusToString(result.newStatus) << "\n"
-         << "    Next revision: " << result.nextDate << "\n"
+         << "    Next revision: " << (result.nextDate.empty() ? "N/A" : result.nextDate) << "\n"
          << "    XP awarded: " << result.xpAwarded << "\n"
          << "    Was reset: " << (result.wasReset ? "YES" : "NO") << "\n";
 
@@ -388,9 +388,7 @@ void demoAnalytics(const vector<Question>& questions) {
 
 int main() {
     cout << "═══════════════════════════════════════════════════════════\n"
-         << "  DSA QUESTION TRACKER — C++ Backend Engine\n"
-         << "  All backend logic powered by custom DSA implementations\n"
-         << "  JS is used ONLY for localStorage / database layer\n"
+         << "  DSA QUESTION TRACKER — Standalone C++ Demos\n"
          << "═══════════════════════════════════════════════════════════\n";
 
     auto questions = createSampleQuestions();
@@ -406,9 +404,9 @@ int main() {
 
     cout << "\n\n═══════════════════════════════════════════════════════════\n"
          << "  ALL 8 DEMOS COMPLETED SUCCESSFULLY\n"
-         << "  Data Structures: HashMap, MinHeap, Trie, DAG\n"
+         << "  Data Structures: HashMap, MaxHeap, Trie, DAG\n"
          << "  Algorithms: SM-2, 5 sorts, BFS, DFS, Topo Sort\n"
-         << "  Backend: Revision Engine, Gamification, Analytics\n"
+         << "  Study Tools: Revision Engine, Gamification, Analytics\n"
          << "═══════════════════════════════════════════════════════════\n";
 
     return 0;

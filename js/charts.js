@@ -11,10 +11,12 @@ DSA.Charts = (() => {
     // Chart.js global defaults
     function setDefaults() {
         if (!window.Chart) return;
-        Chart.defaults.color = '#9398b0';
-        Chart.defaults.borderColor = '#2a2d45';
-        Chart.defaults.font.family = "'Segoe UI', sans-serif";
+        const theme = getComputedStyle(document.documentElement);
+        Chart.defaults.color = theme.getPropertyValue('--text-secondary').trim();
+        Chart.defaults.borderColor = theme.getPropertyValue('--border-light').trim();
+        Chart.defaults.font.family = theme.getPropertyValue('--font-sans').trim();
         Chart.defaults.font.size = 12;
+        Chart.defaults.animation.duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 280;
         Chart.defaults.plugins.legend.labels.boxWidth = 12;
         Chart.defaults.plugins.legend.labels.padding = 16;
     }
@@ -27,37 +29,33 @@ DSA.Charts = (() => {
     }
 
     // ── Solved Over Time (Line Chart) ──
-    function renderSolvedOverTime() {
+    function renderSolvedOverTime(activity) {
         destroyChart('solvedOverTime');
         const ctx = document.getElementById('chart-solved-over-time');
         if (!ctx) return;
-
-        const questions = DSA.Store.getQuestions();
-        const dailyLog = DSA.Store.getDailyLog();
 
         // Build last 30 days data
         const labels = [];
         const solvedData = [];
         const revisedData = [];
         const cumulativeData = [];
+        const firstDate = DSA.Store.addDays(DSA.Store.todayStr(), -29);
         let cumulative = 0;
-
-        // Count all questions solved before last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        cumulative = questions.filter(q => new Date(q.dateSolved) < thirtyDaysAgo).length;
+        for (const [date, day] of activity) {
+            if (date < firstDate) cumulative += day.practiced;
+        }
 
         for (let i = 29; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
+            const dateStr = DSA.Store.dateKey(d);
             labels.push(d.toLocaleDateString('en', { month: 'short', day: 'numeric' }));
 
-            const dayQuestions = questions.filter(q => q.dateSolved === dateStr).length;
-            const log = dailyLog[dateStr];
-            solvedData.push(dayQuestions);
-            revisedData.push(log ? log.revised : 0);
-            cumulative += dayQuestions;
+            const day = activity.get(dateStr);
+            const practiced = day?.practiced || 0;
+            solvedData.push(practiced);
+            revisedData.push(day?.reviewed || 0);
+            cumulative += practiced;
             cumulativeData.push(cumulative);
         }
 
@@ -76,7 +74,7 @@ DSA.Charts = (() => {
                         yAxisID: 'y1'
                     },
                     {
-                        label: 'New Topics',
+                        label: 'Practiced',
                         data: solvedData,
                         borderColor: '#2dd4a8',
                         backgroundColor: 'rgba(45, 212, 168, 0.1)',
@@ -99,7 +97,7 @@ DSA.Charts = (() => {
                 interaction: { mode: 'index', intersect: false },
                 scales: {
                     x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
-                    y: { beginAtZero: true, grid: { color: '#1e2030' } },
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
                     y1: { position: 'right', beginAtZero: true, grid: { display: false } }
                 },
                 plugins: { legend: { position: 'top' } }
@@ -114,7 +112,7 @@ DSA.Charts = (() => {
         if (!ctx) return;
 
         const questions = DSA.Store.getQuestions();
-        const subjectCount = {};
+        const subjectCount = Object.create(null);
         questions.forEach(q => {
             subjectCount[q.subject] = (subjectCount[q.subject] || 0) + 1;
         });
@@ -131,7 +129,7 @@ DSA.Charts = (() => {
                 datasets: [{
                     data,
                     backgroundColor: colors,
-                    borderColor: '#161822',
+                    borderColor: Chart.defaults.borderColor,
                     borderWidth: 2
                 }]
             },
@@ -162,7 +160,7 @@ DSA.Charts = (() => {
                 datasets: [{
                     data: [counts.Easy, counts.Medium, counts.Hard],
                     backgroundColor: ['#2dd4a8', '#f6ad55', '#f56565'],
-                    borderColor: '#161822',
+                    borderColor: Chart.defaults.borderColor,
                     borderWidth: 2
                 }]
             },
@@ -175,12 +173,11 @@ DSA.Charts = (() => {
     }
 
     // ── Revision Consistency (Bar/Line Chart, last 30 days) ──
-    function renderRevisionConsistency() {
+    function renderRevisionConsistency(activity) {
         destroyChart('revisionConsistency');
         const ctx = document.getElementById('chart-revision-consistency');
         if (!ctx) return;
 
-        const dailyLog = DSA.Store.getDailyLog();
         const labels = [];
         const data = [];
         const settings = DSA.Store.getSettings();
@@ -189,11 +186,10 @@ DSA.Charts = (() => {
         for (let i = 29; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            labels.push(d.toLocaleDateString('en', { day: 'numeric' }));
-            const log = dailyLog[dateStr];
-            data.push(log ? log.revised : 0);
-            goalLine.push(settings.dailyGoal || 5);
+            const dateStr = DSA.Store.dateKey(d);
+            labels.push(d.toLocaleDateString('en', { month: 'short', day: 'numeric' }));
+            data.push(activity.get(dateStr)?.reviewed || 0);
+            goalLine.push(settings.dailyGoal);
         }
 
         chartInstances['revisionConsistency'] = new Chart(ctx, {
@@ -210,7 +206,7 @@ DSA.Charts = (() => {
                         borderRadius: 4
                     },
                     {
-                        label: 'Daily Goal',
+                        label: 'Current daily goal',
                         data: goalLine,
                         type: 'line',
                         borderColor: '#f6ad55',
@@ -225,7 +221,7 @@ DSA.Charts = (() => {
                 maintainAspectRatio: false,
                 scales: {
                     x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
-                    y: { beginAtZero: true, grid: { color: '#1e2030' } }
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
                 },
                 plugins: { legend: { position: 'top' } }
             }
@@ -239,16 +235,15 @@ DSA.Charts = (() => {
         if (!ctx) return;
 
         const questions = DSA.Store.getQuestions();
-        const statusCount = { 'Solved': 0, 'Needs Revision': 0, 'Mastered': 0 };
-        questions.forEach(q => { if (statusCount[q.status] !== undefined) statusCount[q.status]++; });
+        const statuses = ['Not Started', 'Solved', 'Needs Revision', 'Mastered'];
 
         chartInstances['mastery'] = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Solved', 'Needs Revision', 'Mastered'],
+                labels: statuses,
                 datasets: [{
-                    data: [statusCount['Solved'], statusCount['Needs Revision'], statusCount['Mastered']],
-                    backgroundColor: ['#63b3ed', '#f6ad55', '#2dd4a8'],
+                    data: statuses.map(status => questions.filter(question => question.status === status).length),
+                    backgroundColor: ['#9ca3af', '#63b3ed', '#f6ad55', '#2dd4a8'],
                     borderRadius: 6,
                     barThickness: 30
                 }]
@@ -259,7 +254,7 @@ DSA.Charts = (() => {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { beginAtZero: true, grid: { color: '#1e2030' } },
+                    x: { beginAtZero: true, ticks: { precision: 0 } },
                     y: { grid: { display: false } }
                 }
             }
@@ -280,7 +275,7 @@ DSA.Charts = (() => {
             }
         });
 
-        const avg = (arr) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        const avg = (arr) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 
         chartInstances['timeAnalysis'] = new Chart(ctx, {
             type: 'bar',
@@ -302,7 +297,7 @@ DSA.Charts = (() => {
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { grid: { display: false } },
-                    y: { beginAtZero: true, grid: { color: '#1e2030' }, title: { display: true, text: 'Minutes' } }
+                    y: { beginAtZero: true, title: { display: true, text: 'Minutes' } }
                 }
             }
         });
@@ -310,6 +305,8 @@ DSA.Charts = (() => {
 
     // ── Learning Curve (Growth Intel) ──
     function renderLearningCurve() {
+        if (!window.Chart) return;
+        setDefaults();
         destroyChart('learningCurve');
         const ctx = document.getElementById('chart-learning-curve');
         if (!ctx) return;
@@ -320,10 +317,11 @@ DSA.Charts = (() => {
 
         questions.forEach(q => {
             (q.revisionHistory || []).forEach(rev => {
-                const d = new Date(rev.date);
+                const d = new Date(`${rev.date}T12:00:00`);
+                if (!Number.isFinite(d.getTime())) return;
                 const weekStart = new Date(d);
                 weekStart.setDate(d.getDate() - d.getDay());
-                const weekKey = weekStart.toISOString().split('T')[0];
+                const weekKey = DSA.Store.dateKey(weekStart);
                 if (!weekData[weekKey]) weekData[weekKey] = { qualities: [], count: 0 };
                 weekData[weekKey].qualities.push(rev.quality);
                 weekData[weekKey].count++;
@@ -332,7 +330,7 @@ DSA.Charts = (() => {
 
         const sortedWeeks = Object.entries(weekData).sort((a, b) => a[0].localeCompare(b[0]));
         const labels = sortedWeeks.map(w => {
-            const d = new Date(w[0]);
+            const d = new Date(`${w[0]}T12:00:00`);
             return d.toLocaleDateString('en', { month: 'short', day: 'numeric' });
         });
         const avgQuality = sortedWeeks.map(w => {
@@ -371,7 +369,7 @@ DSA.Charts = (() => {
                 maintainAspectRatio: false,
                 scales: {
                     x: { grid: { display: false } },
-                    y: { min: 0, max: 5, title: { display: true, text: 'Quality (1-5)' }, grid: { color: '#1e2030' } },
+                    y: { min: 0, max: 5, title: { display: true, text: 'Quality (1-5)' } },
                     y1: { position: 'right', beginAtZero: true, title: { display: true, text: 'Count' }, grid: { display: false } }
                 }
             }
@@ -379,29 +377,12 @@ DSA.Charts = (() => {
     }
 
     // ── Heatmap (GitHub-style) ──
-    function renderHeatmap() {
+    function renderHeatmap(activity = DSA.RevisionEngine.getStudyActivity()) {
         const grid = document.getElementById('heatmap-grid');
         const monthsEl = document.getElementById('heatmap-months');
         if (!grid || !monthsEl) return;
 
-        const dailyLog = DSA.Store.getDailyLog();
-        const questions = DSA.Store.getQuestions();
         const today = new Date();
-
-        // Build activity counts per day for last 365 days
-        const activityMap = {};
-        // Count questions solved per day
-        questions.forEach(q => {
-            const d = q.dateSolved;
-            if (d) activityMap[d] = (activityMap[d] || 0) + 1;
-        });
-        // Add revisions
-        Object.entries(dailyLog).forEach(([date, log]) => {
-            activityMap[date] = (activityMap[date] || 0) + (log.revised || 0);
-        });
-
-        // Find max for scaling
-        const maxActivity = Math.max(1, ...Object.values(activityMap));
 
         // Clear and rebuild
         grid.innerHTML = '';
@@ -412,44 +393,45 @@ DSA.Charts = (() => {
         startDate.setDate(startDate.getDate() - 364);
         // Align to Sunday
         startDate.setDate(startDate.getDate() - startDate.getDay());
+        const firstDate = DSA.Store.dateKey(startDate);
+        let maxActivity = 1;
+        for (const [date, day] of activity) {
+            if (date >= firstDate) maxActivity = Math.max(maxActivity, day.practiced + day.reviewed);
+        }
 
-        const months = [];
-        let lastMonth = -1;
+        let lastMonth = '';
+        let dayIndex = 0;
 
         const currentDate = new Date(startDate);
         while (currentDate <= today) {
-            const dateStr = currentDate.toISOString().split('T')[0];
-            const count = activityMap[dateStr] || 0;
-            const level = count === 0 ? 0 : count <= maxActivity * 0.25 ? 1 : count <= maxActivity * 0.5 ? 2 : count <= maxActivity * 0.75 ? 3 : 4;
+            const dateStr = DSA.Store.dateKey(currentDate);
+            const day = activity.get(dateStr);
+            const count = day ? day.practiced + day.reviewed : 0;
+            const level = Math.ceil(count / maxActivity * 4);
 
             const cell = document.createElement('div');
             cell.className = 'heatmap-cell';
             cell.style.background = `var(--hm-${level})`;
-            cell.title = `${dateStr}: ${count} activities`;
+            cell.title = `${dateStr}: ${count} ${count === 1 ? 'activity' : 'activities'}`;
             grid.appendChild(cell);
 
-            // Track months
-            const month = currentDate.getMonth();
-            if (month !== lastMonth && currentDate.getDay() === 0) {
-                months.push({
-                    name: currentDate.toLocaleDateString('en', { month: 'short' }),
-                    position: months.length
-                });
+            const month = dateStr.slice(0, 7);
+            if (month !== lastMonth && dayIndex % 7 === 0) {
+                const label = document.createElement('span');
+                label.textContent = currentDate.toLocaleDateString('en', { month: 'short' });
+                label.style.gridColumn = String(dayIndex / 7 + 1);
+                monthsEl.appendChild(label);
                 lastMonth = month;
             }
 
             currentDate.setDate(currentDate.getDate() + 1);
+            dayIndex++;
         }
-
-        // Render month labels
-        const totalWeeks = Math.ceil(365 / 7);
-        months.forEach((m, idx) => {
-            const span = document.createElement('span');
-            span.textContent = m.name;
-            span.style.position = 'relative';
-            span.style.minWidth = `${(totalWeeks / months.length) * 16}px`;
-            monthsEl.appendChild(span);
-        });
+        const scroller = grid.closest('.heatmap-container');
+        if (scroller?.clientWidth && !scroller.dataset.positioned) {
+            scroller.dataset.positioned = 'true';
+            requestAnimationFrame(() => { scroller.scrollLeft = scroller.scrollWidth; });
+        }
     }
 
     // ── Mastery Table ──
@@ -458,7 +440,7 @@ DSA.Charts = (() => {
         if (!tbody) return;
 
         const questions = DSA.Store.getQuestions();
-        const subjects = {};
+        const subjects = Object.create(null);
 
         questions.forEach(q => {
             if (!subjects[q.subject]) {
@@ -466,15 +448,21 @@ DSA.Charts = (() => {
             }
             subjects[q.subject].total++;
             if (q.status === 'Mastered') subjects[q.subject].mastered++;
-            else subjects[q.subject].inProgress++;
+            else if (q.status !== 'Not Started') subjects[q.subject].inProgress++;
         });
 
         const sorted = Object.entries(subjects).sort((a, b) => b[1].total - a[1].total);
+        if (!sorted.length) {
+            tbody.innerHTML = '<tr><td colspan="6">No questions recorded yet.</td></tr>';
+            return;
+        }
 
         tbody.innerHTML = sorted.map(([name, data]) => {
             const pct = data.total > 0 ? Math.round((data.mastered / data.total) * 100) : 0;
+            const label = document.createElement('strong');
+            label.textContent = name;
             return `<tr>
-                <td><strong>${name}</strong></td>
+                <td>${label.outerHTML}</td>
                 <td>${data.total}</td>
                 <td>${data.mastered}</td>
                 <td>${data.inProgress}</td>
@@ -490,15 +478,20 @@ DSA.Charts = (() => {
 
     // ── Render All Analytics ──
     function renderAll() {
-        setDefaults();
-        renderSolvedOverTime();
-        renderSubjectDist();
-        renderDifficultyDist();
-        renderRevisionConsistency();
-        renderMasteryProgress();
-        renderTimeAnalysis();
+        const activity = DSA.RevisionEngine.getStudyActivity();
+        document.getElementById('analytics-offline').hidden = Boolean(window.Chart);
+        document.querySelector('#view-analytics .analytics-grid').hidden = !window.Chart;
+        if (window.Chart) {
+            setDefaults();
+            renderSolvedOverTime(activity);
+            renderSubjectDist();
+            renderDifficultyDist();
+            renderRevisionConsistency(activity);
+            renderMasteryProgress();
+            renderTimeAnalysis();
+        }
         renderMasteryTable();
-        renderHeatmap();
+        renderHeatmap(activity);
     }
 
     // ── Color Generator ──

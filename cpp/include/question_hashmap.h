@@ -69,7 +69,7 @@ public:
         : buckets_(INIT_CAP), size_(0), capacity_(INIT_CAP), collisions_(0) {}
 
     explicit QuestionHashMap(int cap)
-        : buckets_(cap), size_(0), capacity_(cap), collisions_(0) {}
+        : buckets_(cap > 0 ? cap : INIT_CAP), size_(0), capacity_(static_cast<int>(buckets_.size())), collisions_(0) {}
 
     // ── Insert / Update — O(1) avg ──
     void put(const string& key, const Question& val) {

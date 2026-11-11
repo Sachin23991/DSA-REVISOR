@@ -4,21 +4,20 @@
 Question saving was taking a lot of time, causing poor user experience.
 
 ## Root Causes Identified
-1. **Firestore operations**: Cloud sync was potentially blocking the UI thread
-2. **Heavy UI updates**: `populateFilterOptions()` and `populateSubjectSuggestions()` called synchronously
-3. **No loading feedback**: Users didn't know the save was in progress
+1. **Shared cloud synchronization** could delay startup and reintroduce outdated records.
+2. **Filter rebuilding** used to run in the same operation as saving a question.
+3. **Save feedback** was missing during form submission.
 
 ## Optimizations Applied
 
-### 1. Non-Blocking Firestore Operations
+### 1. Browser-local storage
 **File**: `js/store.js`
-- Wrapped all Firestore writes in `setTimeout(() => {...}, 0)` 
-- Ensures cloud sync happens asynchronously without blocking UI
-- Firebase operations are now truly "fire-and-forget"
+- Question and activity records are saved in the browser.
+- Local write failures surface in the app. Backup restore rolls back changes it wrote if a later write fails.
 
 ### 2. Deferred UI Updates  
 **File**: `js/app.js`
-- Moved `populateFilterOptions()` and `populateSubjectSuggestions()` to `setTimeout()`
+- Moved filter and subject suggestion updates after saving.
 - These expensive operations now run after the save completes
 - User gets instant feedback instead of waiting
 
@@ -37,10 +36,6 @@ Question saving was taking a lot of time, causing poor user experience.
   - Total operation time
   - Individual sub-operation times
 
-## Expected Results
-- **Before**: 2-5 seconds to save (depending on Firebase connection)
-- **After**: < 100ms for user feedback, cloud sync happens in background
-
 ## How to Monitor
 Open browser console (F12) and look for these logs:
 ```
@@ -58,8 +53,4 @@ Open browser console (F12) and look for these logs:
 5. Form resets instantly
 6. Check console for timing metrics
 
-## Additional Benefits
-- Better error handling with try-catch
-- Cloud sync failures don't block the app
-- Users can continue working even if offline
-- All data saved locally first, synced to cloud in background
+Export a backup from Settings to move progress between browsers or site addresses.

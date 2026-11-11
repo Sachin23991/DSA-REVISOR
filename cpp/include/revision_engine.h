@@ -64,7 +64,7 @@ public:
         quality = max(0, min(5, quality));
         double delta = 0.1 - (5.0 - quality) * (0.08 + (5.0 - quality) * 0.02);
         double newEF = currentEF + delta;
-        return max(EF_MIN, newEF);
+        return max(static_cast<double>(EF_MIN), newEF);
     }
 
     // ── Complete a revision ──
@@ -113,7 +113,7 @@ public:
 
         // calculate next date
         q.lastRevisionDate = todayStr();
-        result.nextDate = calculateNextDate(q);
+        result.nextDate = q.status == QuestionStatus::MASTERED ? "" : calculateNextDate(q);
         q.nextRevisionDate = result.nextDate;
 
         // award XP
@@ -159,9 +159,7 @@ public:
         string today = todayStr();
         vector<Question> due;
         for (const auto& q : questions) {
-            if (q.status == QuestionStatus::MASTERED) continue;
-            if (q.nextRevisionDate.empty()) continue;
-            if (q.nextRevisionDate <= today)
+            if (q.hasScheduledRevision() && q.nextRevisionDate == today)
                 due.push_back(q);
         }
         return due;
@@ -173,9 +171,7 @@ public:
         string today = todayStr();
         vector<Question> overdue;
         for (const auto& q : questions) {
-            if (q.status == QuestionStatus::MASTERED) continue;
-            if (q.nextRevisionDate.empty()) continue;
-            if (q.nextRevisionDate < today)
+            if (q.hasScheduledRevision() && q.nextRevisionDate < today)
                 overdue.push_back(q);
         }
         return overdue;
@@ -188,9 +184,7 @@ public:
         string future = addDaysToDate(today, days);
         vector<Question> upcoming;
         for (const auto& q : questions) {
-            if (q.status == QuestionStatus::MASTERED) continue;
-            if (q.nextRevisionDate.empty()) continue;
-            if (q.nextRevisionDate > today && q.nextRevisionDate <= future)
+            if (q.hasScheduledRevision() && q.nextRevisionDate > today && q.nextRevisionDate <= future)
                 upcoming.push_back(q);
         }
         return upcoming;

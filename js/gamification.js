@@ -14,6 +14,7 @@ DSA.Gamification = (() => {
     }
 
     function getLevelFromXP(totalXP) {
+        totalXP = Number.isFinite(totalXP) && totalXP > 0 ? Math.min(totalXP, Number.MAX_SAFE_INTEGER) : 0;
         let level = 1;
         let cumulative = 0;
         while (true) {
@@ -61,38 +62,40 @@ DSA.Gamification = (() => {
     }
 
     // ── Streak System ──
+    function getCurrentStreak(activity = DSA.RevisionEngine.getStudyActivity(), today = DSA.Store.todayStr()) {
+        let day = activity.has(today) ? today : DSA.Store.addDays(today, -1);
+        let streak = 0;
+        while (activity.has(day)) {
+            streak++;
+            day = DSA.Store.addDays(day, -1);
+        }
+        return streak;
+    }
+
     function updateStreak() {
         const stats = DSA.Store.getUserStats();
         const today = DSA.Store.todayStr();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const activity = DSA.RevisionEngine.getStudyActivity(today);
+        const streak = getCurrentStreak(activity, today);
+        if (!activity.has(today)) return streak;
 
-        if (stats.lastActiveDate === today) {
-            // Already active today, no change
-            return stats.currentStreak;
-        }
+        const firstActivityToday = stats.lastActiveDate !== today;
+        if (!firstActivityToday && stats.currentStreak === streak) return streak;
 
-        if (stats.lastActiveDate === yesterdayStr) {
-            // Consecutive day
-            stats.currentStreak = (stats.currentStreak || 0) + 1;
-        } else if (stats.lastActiveDate !== today) {
-            // Streak broken (or first activity)
-            stats.currentStreak = 1;
-        }
-
+        stats.currentStreak = streak;
         stats.lastActiveDate = today;
-        stats.longestStreak = Math.max(stats.longestStreak || 0, stats.currentStreak);
-
-        // Streak milestone XP
-        if (stats.currentStreak === 7) awardStreakBonus(7, 50);
-        else if (stats.currentStreak === 14) awardStreakBonus(14, 100);
-        else if (stats.currentStreak === 30) awardStreakBonus(30, 200);
-        else if (stats.currentStreak === 60) awardStreakBonus(60, 400);
-        else if (stats.currentStreak === 100) awardStreakBonus(100, 800);
-
+        stats.longestStreak = Math.max(stats.longestStreak || 0, streak);
         DSA.Store.saveUserStats(stats);
-        return stats.currentStreak;
+
+        if (!firstActivityToday) return streak;
+        // Streak milestone XP
+        if (streak === 7) awardStreakBonus(7, 50);
+        else if (streak === 14) awardStreakBonus(14, 100);
+        else if (streak === 30) awardStreakBonus(30, 200);
+        else if (streak === 60) awardStreakBonus(60, 400);
+        else if (streak === 100) awardStreakBonus(100, 800);
+
+        return streak;
     }
 
     function awardStreakBonus(days, xp) {
@@ -103,32 +106,13 @@ DSA.Gamification = (() => {
         }
     }
 
-    function checkStreak() {
-        const stats = DSA.Store.getUserStats();
-        const today = DSA.Store.todayStr();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        // Check if streak is still active
-        if (stats.lastActiveDate && stats.lastActiveDate !== today && stats.lastActiveDate !== yesterdayStr) {
-            // Streak was broken
-            if (stats.currentStreak > 0) {
-                DSA.Store.addActivity('streak-lost', `Streak of ${stats.currentStreak} days lost 😔`);
-                stats.currentStreak = 0;
-                DSA.Store.saveUserStats(stats);
-            }
-        }
-        return stats.currentStreak || 0;
-    }
-
     // ── Badge Definitions ──
     const BADGES = [
-        { id: 'first_question', name: 'First Step', icon: '🌱', description: 'Log your first topic', check: (s, q) => q.length >= 1 },
-        { id: 'ten_questions', name: 'Getting Started', icon: '📝', description: 'Log 10 topics', check: (s, q) => q.length >= 10 },
-        { id: 'fifty_questions', name: 'Committed', icon: '💪', description: 'Log 50 topics', check: (s, q) => q.length >= 50 },
-        { id: 'hundred_questions', name: 'Centurion', icon: '🏛️', description: 'Log 100 topics', check: (s, q) => q.length >= 100 },
-        { id: 'five_hundred', name: 'Knowledge Warrior', icon: '⚔️', description: 'Log 500 topics', check: (s, q) => q.length >= 500 },
+        { id: 'first_question', name: 'First Step', icon: '🌱', description: 'Practice your first question', check: (s, q) => q.length >= 1 },
+        { id: 'ten_questions', name: 'Getting Started', icon: '📝', description: 'Practice 10 questions', check: (s, q) => q.length >= 10 },
+        { id: 'fifty_questions', name: 'Committed', icon: '💪', description: 'Practice 50 questions', check: (s, q) => q.length >= 50 },
+        { id: 'hundred_questions', name: 'Centurion', icon: '🏛️', description: 'Practice 100 questions', check: (s, q) => q.length >= 100 },
+        { id: 'five_hundred', name: 'Knowledge Warrior', icon: '⚔️', description: 'Practice 500 questions', check: (s, q) => q.length >= 500 },
         { id: 'first_revision', name: 'Revisor', icon: '🔄', description: 'Complete first revision', check: (s) => (s.totalRevisions || 0) >= 1 },
         { id: 'fifty_revisions', name: 'Diligent', icon: '📖', description: 'Complete 50 revisions', check: (s) => (s.totalRevisions || 0) >= 50 },
         { id: 'two_hundred_rev', name: 'Review Master', icon: '🎓', description: 'Complete 200 revisions', check: (s) => (s.totalRevisions || 0) >= 200 },
@@ -151,7 +135,7 @@ DSA.Gamification = (() => {
      */
     function checkBadges() {
         const stats = DSA.Store.getUserStats();
-        const questions = DSA.Store.getQuestions();
+        const questions = DSA.Store.getQuestions().filter(question => question.status !== 'Not Started');
         const currentBadges = new Set(stats.badges || []);
         const newBadges = [];
 
@@ -168,10 +152,7 @@ DSA.Gamification = (() => {
 
             newBadges.forEach(badge => {
                 awardXP(30, `Badge: ${badge.name}`);
-                DSA.Store.addActivity('badge', `🏅 Earned badge: "${badge.name}"`);
-                if (DSA.App && DSA.App.showToast) {
-                    DSA.App.showToast(`${badge.icon} Badge Unlocked: ${badge.name}!`, 'success');
-                }
+                DSA.Store.addActivity('badge', `Earned ${badge.name}`);
             });
         }
 
@@ -194,20 +175,19 @@ DSA.Gamification = (() => {
      * Get streak data for the last 7 days.
      */
     function getStreakWeek() {
-        const dailyLog = DSA.Store.getDailyLog();
+        const activity = DSA.RevisionEngine.getStudyActivity();
         const days = [];
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            const log = dailyLog[dateStr];
+            const dateStr = DSA.Store.dateKey(d);
             days.push({
                 date: dateStr,
                 dayName: dayNames[d.getDay()],
                 isToday: i === 0,
-                active: log && (log.solved > 0 || log.revised > 0)
+                active: activity.has(dateStr)
             });
         }
         return days;
@@ -217,6 +197,7 @@ DSA.Gamification = (() => {
      * Confetti effect for celebrations.
      */
     function triggerConfetti() {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const canvas = document.getElementById('confetti-canvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -278,7 +259,8 @@ DSA.Gamification = (() => {
         getLevelFromXP,
         awardXP,
         updateStreak,
-        checkStreak,
+        getCurrentStreak,
+        checkStreak: getCurrentStreak,
         checkBadges,
         getAllBadges,
         getStreakWeek,

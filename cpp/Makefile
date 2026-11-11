@@ -13,7 +13,19 @@ CXXFLAGS  = -std=c++17 -Wall -Wextra -O2
 INCLUDES  = -I include
 SRC_DIR   = src
 BUILD_DIR = build
-TARGET    = $(BUILD_DIR)/dsa_tracker
+
+ifeq ($(OS),Windows_NT)
+EXE_EXT = .exe
+BUILD_PATH = $(subst /,\,$(BUILD_DIR))
+MAKE_BUILD_DIR = if not exist "$(BUILD_PATH)" mkdir "$(BUILD_PATH)"
+RUN_TARGET = "$(subst /,\,$(TARGET))"
+else
+MAKE_BUILD_DIR = mkdir -p "$(BUILD_DIR)"
+RUN_TARGET = "$(TARGET)"
+endif
+
+TARGET       = $(BUILD_DIR)/dsa_tracker$(EXE_EXT)
+DEBUG_TARGET = $(BUILD_DIR)/dsa_tracker_debug$(EXE_EXT)
 
 SRCS      = $(SRC_DIR)/main.cpp
 HEADERS   = $(wildcard include/*.h)
@@ -28,17 +40,19 @@ $(TARGET): $(SRCS) $(HEADERS) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $(SRCS) -o $(TARGET)
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	$(MAKE_BUILD_DIR)
 
 # ── Run ──
 run: $(TARGET)
 	@echo ""
-	@./$(TARGET)
+	@$(RUN_TARGET)
 
 # ── Debug Build ──
-debug: CXXFLAGS = -std=c++17 -Wall -Wextra -g -DDEBUG
-debug: $(TARGET)
+debug: $(DEBUG_TARGET)
 	@echo "  Debug build complete."
+
+$(DEBUG_TARGET): $(SRCS) $(HEADERS) | $(BUILD_DIR)
+	$(CXX) -std=c++17 -Wall -Wextra -g -DDEBUG $(INCLUDES) $(SRCS) -o $(DEBUG_TARGET)
 
 # ── Clean ──
 clean:

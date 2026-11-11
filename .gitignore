@@ -1,12 +1,7 @@
-# Firebase Configuration is now public (safe for client-side apps)
-# Security is handled by Firebase Security Rules
-
-# Environment variables (not used in production for client-side apps)
+# Local environment variables
 .env
 .env.local
 .env.production
-
-# Note: .env.example is NOT ignored - it should be committed as a template
 
 # Node modules (if using build tools in future)
 node_modules/

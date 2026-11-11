@@ -72,9 +72,12 @@ struct Question {
           easeFactor(2.5), revisionCycle(0),
           streak(0), xpEarned(0) {}
 
+    bool hasScheduledRevision() const {
+        return status != QuestionStatus::MASTERED && !nextRevisionDate.empty();
+    }
+
     double getPriorityScore(const string& today) const {
-        if (nextRevisionDate.empty() || status == QuestionStatus::MASTERED)
-            return -1.0;
+        if (!hasScheduledRevision()) return -1.0;
 
         int daysOverdue  = dateDiffDays(nextRevisionDate, today);
         double priority  = static_cast<double>(daysOverdue);

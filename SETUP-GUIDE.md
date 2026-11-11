@@ -1,139 +1,29 @@
-# 📋 Deployment Setup Guide
+# Study Tracker setup
 
-## ✅ What's Been Done
+Study Tracker is a static web app. Serve the project folder from a local web server or deploy it to static hosting.
 
-Your Firebase application is now properly configured for deployment on GitHub Pages and Vercel.
+## Run locally
 
-### Files Configured:
+From the project folder, run:
 
-1. **`.gitignore`** - Properly configured to exclude only necessary files
-   - ✅ `.env` files are excluded (not used in client-side apps)
-   - ✅ Build outputs and temporary files are excluded
-   - ✅ `js/config.js` is **INCLUDED** (safe for client-side Firebase apps)
-
-2. **`js/config.js`** - Firebase credentials (✅ Safe to commit for client-side apps)
-   - These values are **public identifiers**, not secrets
-   - Security is enforced by Firebase Security Rules
-   - Required for GitHub Pages and Vercel deployments
-
-3. **`js/config.example.js`** - Template file for reference
-
-4. **`index.html`** - Loads Firebase config from external file
-
-## 🔥 About Firebase Security
-
-**Important:** Firebase configuration values in `config.js` are **NOT secret credentials**.
-
-- ✅ API keys are **public identifiers** - they identify your Firebase project
-- ✅ Security is enforced by **Firebase Security Rules** (server-side)
-- ✅ Every public website using Firebase exposes these values
-- ✅ You can see them in DevTools on any Firebase app (Firebase docs, etc.)
-
-## 🚀 Deploying to GitHub Pages
-
-### Already Done:
-```bash
-git add .
-git commit -m "Configure Firebase for deployment"
-git push
+```sh
+python -m http.server 8000 --bind 127.0.0.1
 ```
 
-### Enable GitHub Pages:
-1. Go to your repository on GitHub
-2. Settings → Pages
-3. Source: Deploy from branch **main**
-4. Folder: **/ (root)**
-5. Save and wait 2-3 minutes
+Open [Study Tracker on your computer](http://127.0.0.1:8000). Use the same browser profile and address each time so the app can find your saved progress.
 
-Your app will be live at: `https://YOUR_USERNAME.github.io/DSA-REVISOR/`
+## Deploy
 
-## 🚀 Deploying to Vercel
+Publish the project folder as a static site with `index.html` as its entry point. GitHub Pages can serve it directly from the repository root.
 
-1. Go to https://vercel.com
-2. Import your GitHub repository
-3. Framework Preset: **Other**
-4. Root Directory: `./`
-5. Click **Deploy**
+## Move or restore your progress
 
-Your app will be live at: `https://your-project.vercel.app`
+1. Open **Settings** and choose **Export Data**.
+2. Keep the downloaded JSON file somewhere you can find it.
+3. On the destination browser or site, choose **Import Data** and select the backup.
 
-## 🔐 What's Protected
+Import replaces the sections included in the backup. Reset clears the tracker’s study data for the current browser and site. Browser data clearing and private browsing can also remove progress.
 
-The following files/data are **NOT uploaded** to GitHub:
+## Existing Firebase deployments
 
-- ✅ `.env` - Local environment variables (not needed for client-side apps)
-- ✅ Build files from C++ compilation
-- ✅ IDE/Editor specific files
-
-## 📝 What Will Be Uploaded
-
-- ✅ Build files from C++ compilation
-- ✅ IDE/Editor specific files
-- ✅ Temporary files and logs
-
-## 📝 What Will Be Uploaded
-
-- ✅ All HTML, CSS, JavaScript source code **including config.js**
-- ✅ `js/config.js` - Firebase configuration (safe for public repos)
-- ✅ `js/config.example.js` - Template for reference
-- ✅ `.gitignore` - Git ignore rules
-- ✅ `README.md` - Project documentation
-- ✅ C++ source code (src/ and include/)
-- ✅ All other project files
-
-## 🤝 For Other Developers
-
-When someone clones your repository:
-
-1. **No setup needed!** `js/config.js` is already included
-2. Open `index.html` in a browser
-3. App connects to your shared Firebase project
-
-**Want separate Firebase projects?**
-- Copy `js/config.example.js` to create their own `config.js`
-- Update with their Firebase credentials
-- Add `js/config.js` to `.gitignore` in their fork
-
-## 🔒 Firebase Security Best Practices
-
-1. **Enable Firebase Security Rules** to control database access:
-   ```javascript
-   // Firestore Rules example
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /{document=**} {
-         allow read, write: if request.auth != null;
-       }
-     }
-   }
-   ```
-
-2. **Set up Firebase Authentication** for user management
-
-3. **Configure authorized domains** in Firebase Console
-
-4. **Monitor usage** in Firebase Console to detect abuse
-
-## ✅ Deployment Status
-
-✅ **GitHub Pages**: Ready to deploy
-✅ **Vercel**: Ready to deploy
-✅ **Firebase Hosting**: Ready to deploy
-✅ **Local Development**: Works out of the box
-
-## 🎉 You're Ready!
-
-Your project is now configured for seamless deployment. The app will work on:
-- GitHub Pages
-- Vercel
-- Any static hosting platform
-- Local development (just open index.html)
-
----
-
-**Having Issues?**
-- Clear browser cache and hard reload (Ctrl+F5)
-- Check browser console for errors
-- Verify Firebase project is active in Firebase Console
-- Ensure Firebase Security Rules allow your operations
+The app no longer connects to the legacy shared Firebase database. Study data already saved in your browser is still available at its original address. If a previous deployment kept records exclusively in Firestore, have its owner recover the appropriate records separately. A browser reset only applies to the browser copy.

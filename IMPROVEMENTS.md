@@ -301,7 +301,7 @@ Comprehensive CSS improvements and new features added based on research of leadi
 ### Technologies
 - Pure HTML5, CSS3, JavaScript
 - Chart.js for visualizations
-- Firebase for backend
+- Browser storage with JSON backup and restore
 - Inter font family
 
 ---
@@ -313,7 +313,7 @@ For issues or suggestions:
 2. Review code comments
 3. Test in different browsers
 4. Check console for errors
-5. Verify Firebase configuration
+5. Verify that browser storage is available for the site
 
 ---
 

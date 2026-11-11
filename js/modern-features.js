@@ -6,8 +6,8 @@ window.DSA = window.DSA || {};
 
 DSA.ModernFeatures = (() => {
     let timerInterval = null;
-    let timerSeconds = 0;
-    let timerRunning = false;
+    let elapsedTime = 0;
+    let timerStartedAt = null;
 
     // ════════════ TIMER FUNCTIONS ════════════
     function initTimer() {
@@ -19,31 +19,30 @@ DSA.ModernFeatures = (() => {
         if (!startBtn || !pauseBtn || !resetBtn || !display) return;
 
         startBtn.addEventListener('click', () => {
-            if (!timerRunning) {
-                timerRunning = true;
+            if (timerStartedAt === null) {
+                timerStartedAt = performance.now();
                 startBtn.classList.add('active');
                 pauseBtn.classList.remove('active');
                 
-                timerInterval = setInterval(() => {
-                    timerSeconds++;
-                    updateTimerDisplay();
-                }, 1000);
+                timerInterval = setInterval(updateTimerDisplay, 250);
             }
         });
 
         pauseBtn.addEventListener('click', () => {
-            if (timerRunning) {
-                timerRunning = false;
+            if (timerStartedAt !== null) {
+                elapsedTime += performance.now() - timerStartedAt;
+                timerStartedAt = null;
                 clearInterval(timerInterval);
+                updateTimerDisplay();
                 pauseBtn.classList.add('active');
                 startBtn.classList.remove('active');
             }
         });
 
         resetBtn.addEventListener('click', () => {
-            timerRunning = false;
+            timerStartedAt = null;
             clearInterval(timerInterval);
-            timerSeconds = 0;
+            elapsedTime = 0;
             updateTimerDisplay();
             startBtn.classList.remove('active');
             pauseBtn.classList.remove('active');
@@ -54,6 +53,8 @@ DSA.ModernFeatures = (() => {
         const display = document.getElementById('timer-display');
         if (!display) return;
 
+        const runningTime = timerStartedAt === null ? 0 : performance.now() - timerStartedAt;
+        const timerSeconds = Math.floor((elapsedTime + runningTime) / 1000);
         const hours = Math.floor(timerSeconds / 3600);
         const minutes = Math.floor((timerSeconds % 3600) / 60);
         const seconds = timerSeconds % 60;
@@ -106,6 +107,10 @@ DSA.ModernFeatures = (() => {
                 closeCalendarEntryModal();
             }
         });
+        document.getElementById('calendar-entry-modal').addEventListener('cancel', event => {
+            event.preventDefault();
+            closeCalendarEntryModal();
+        });
 
         renderCalendar();
     }
@@ -138,18 +143,21 @@ DSA.ModernFeatures = (() => {
 
         // Add days of the month
         for (let day = 1; day <= daysInMonth; day++) {
-            const dayEl = document.createElement('div');
+            const dayEl = document.createElement('button');
+            dayEl.type = 'button';
             dayEl.className = 'calendar-day';
             dayEl.textContent = day;
 
             const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const entry = calendarEntries[dateKey];
+            dayEl.setAttribute('aria-label', new Date(currentYear, currentMonth, day).toLocaleDateString(undefined, { dateStyle: 'long' }));
 
             // Mark today
             if (day === today.getDate() && 
                 currentMonth === today.getMonth() && 
                 currentYear === today.getFullYear()) {
                 dayEl.classList.add('today');
+                dayEl.setAttribute('aria-current', 'date');
             }
 
             // Mark if has entry
@@ -164,7 +172,7 @@ DSA.ModernFeatures = (() => {
 
             dayEl.addEventListener('click', () => {
                 if (!dayEl.classList.contains('disabled')) {
-                    openCalendarEntryModal(dateKey, day);
+                    openCalendarEntryModal(dateKey);
                 }
             });
 
@@ -172,10 +180,10 @@ DSA.ModernFeatures = (() => {
         }
     }
 
-    function openCalendarEntryModal(dateKey, day) {
+    function openCalendarEntryModal(dateKey) {
         selectedDateKey = dateKey;
         const entry = DSA.Store.getCalendarEntry(dateKey);
-        const date = new Date(dateKey);
+        const date = new Date(`${dateKey}T12:00:00`);
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                            'July', 'August', 'September', 'October', 'November', 'December'];
         
@@ -194,11 +202,11 @@ DSA.ModernFeatures = (() => {
             document.getElementById('calendar-entry-delete').style.display = 'none';
         }
 
-        document.getElementById('calendar-entry-modal').classList.add('show');
+        document.getElementById('calendar-entry-modal').showModal();
     }
 
     function closeCalendarEntryModal() {
-        document.getElementById('calendar-entry-modal').classList.remove('show');
+        document.getElementById('calendar-entry-modal').close();
         selectedDateKey = null;
     }
 
@@ -209,18 +217,19 @@ DSA.ModernFeatures = (() => {
         const notes = document.getElementById('cal-entry-notes').value.trim();
         const tasks = document.getElementById('cal-entry-tasks').value.trim();
 
-        if (!important && !notes && !tasks) {
-            // If all empty, delete the entry
-            DSA.Store.deleteCalendarEntry(selectedDateKey);
-        } else {
-            DSA.Store.saveCalendarEntry(selectedDateKey, {
-                important,
-                notes,
-                tasks
-            });
+        try {
+            if (!important && !notes && !tasks) {
+                DSA.Store.deleteCalendarEntry(selectedDateKey);
+            } else {
+                DSA.Store.saveCalendarEntry(selectedDateKey, { important, notes, tasks });
+            }
+        } catch (error) {
+            DSA.App?.showToast?.(error.message, 'error');
+            return;
         }
 
         renderCalendar();
+        DSA.App?.refreshPlannerSchedule?.();
         closeCalendarEntryModal();
         
         if (typeof DSA.App !== 'undefined' && DSA.App.showToast) {
@@ -232,8 +241,14 @@ DSA.ModernFeatures = (() => {
         if (!selectedDateKey) return;
         if (!confirm('Delete this calendar entry?')) return;
 
-        DSA.Store.deleteCalendarEntry(selectedDateKey);
+        try {
+            DSA.Store.deleteCalendarEntry(selectedDateKey);
+        } catch (error) {
+            DSA.App?.showToast?.(error.message, 'error');
+            return;
+        }
         renderCalendar();
+        DSA.App?.refreshPlannerSchedule?.();
         closeCalendarEntryModal();
         
         if (typeof DSA.App !== 'undefined' && DSA.App.showToast) {
@@ -253,7 +268,7 @@ DSA.ModernFeatures = (() => {
         }
 
         // Group questions by subject
-        const subjectData = {};
+        const subjectData = Object.create(null);
         questions.forEach(q => {
             const subject = q.subject || 'Other';
             if (!subjectData[subject]) {
@@ -276,7 +291,7 @@ DSA.ModernFeatures = (() => {
                     <div class="progress-item">
                         <div class="progress-header">
                             <div class="progress-label">
-                                <span>${subject}</span>
+                                <span>${escapeHtml(subject)}</span>
                             </div>
                             <div class="progress-value">${data.mastered}/${data.total} • ${percentage}%</div>
                         </div>
@@ -372,40 +387,30 @@ DSA.ModernFeatures = (() => {
     }
 
     // ════════════ GOAL TRACKER ════════════
-    function updateGoalTracker() {
-        const questions = DSA.Store?.getAllQuestions?.() || [];
-        const thisWeek = getThisWeekQuestions(questions);
-        
+    function updateGoalTracker(activity = DSA.RevisionEngine.getStudyActivity()) {
+        const today = DSA.Store.todayStr();
+        const dayOfWeek = new Date(`${today}T00:00:00Z`).getUTCDay();
+        const weekStart = DSA.Store.addDays(today, -dayOfWeek);
         const target = 10; // Default weekly goal
-        const completed = thisWeek.length;
+        let completed = 0;
+        for (const [date, day] of activity) {
+            if (date >= weekStart && date <= today) completed += day.practiced;
+        }
         const percentage = Math.min(Math.round((completed / target) * 100), 100);
 
         const targetEl = document.getElementById('goal-target');
         const completedEl = document.getElementById('goal-completed');
         const percentageEl = document.getElementById('goal-percentage');
-        const ringEl = document.getElementById('goal-ring');
+        const progress = document.getElementById('goal-progress');
 
         if (targetEl) targetEl.textContent = target;
         if (completedEl) completedEl.textContent = completed;
         if (percentageEl) percentageEl.textContent = `${percentage}%`;
         
-        if (ringEl) {
-            const circumference = 264; // 2 * π * r (r=42)
-            const offset = circumference - (percentage / 100) * circumference;
-            ringEl.style.strokeDashoffset = offset;
+        if (progress) {
+            progress.value = percentage;
+            progress.setAttribute('aria-valuetext', `${completed} of ${target} questions practiced this week`);
         }
-    }
-
-    function getThisWeekQuestions(questions) {
-        const now = new Date();
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
-        weekStart.setHours(0, 0, 0, 0);
-
-        return questions.filter(q => {
-            const qDate = new Date(q.dateSolved);
-            return qDate >= weekStart;
-        });
     }
 
     // ════════════ SKELETON LOADERS ════════════
@@ -444,6 +449,7 @@ DSA.ModernFeatures = (() => {
     // Public API
     return {
         init,
+        renderCalendar,
         updateTopicProgress,
         updateDifficultyDistribution,
         updateGoalTracker,

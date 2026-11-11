@@ -1,16 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="obsidian">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
-    <meta name="theme-color" content="#1a1a2e">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f7fb">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Study Tracker — Universal Revision Platform</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Study Tracker</title>
     <!-- CSS split into sections for easy editing -->
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/base.css">
@@ -21,47 +18,61 @@
     <link rel="stylesheet" href="css/modern-features.css">
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="stylesheet" href="css/utilities.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="css/interface.css">
+    <script defer src="js/vendor/chart.umd.min.js"></script>
 </head>
 <body>
     <!-- ═══════════ SIDEBAR ═══════════ -->
-    <nav id="sidebar">
+    <nav id="sidebar" aria-label="Main navigation">
         <div class="sidebar-header">
-            <span class="logo">📖</span>
+            <span class="logo" aria-hidden="true">S</span>
             <h2>Study Tracker</h2>
+            <button type="button" id="sidebar-close" aria-label="Close navigation">×</button>
         </div>
-        <ul class="nav-links">
-            <li class="active" data-view="dashboard">
-                <span class="nav-icon">📊</span><span class="nav-text">Dashboard</span>
-            </li>
-            <li data-view="add-question">
-                <span class="nav-icon">➕</span><span class="nav-text">Add Question</span>
-            </li>
-            <li data-view="questions">
-                <span class="nav-icon">📋</span><span class="nav-text">All Questions</span>
-            </li>
-            <li data-view="revisions">
-                <span class="nav-icon">🔁</span><span class="nav-text">Revisions</span>
-            </li>
-            <li data-view="analytics">
-                <span class="nav-icon">📈</span><span class="nav-text">Analytics</span>
-            </li>
-            <li data-view="growth">
-                <span class="nav-icon">🧠</span><span class="nav-text">Growth Intel</span>
-            </li>
-            <li data-view="syllabus">
-                <span class="nav-icon">📚</span><span class="nav-text">Syllabus</span>
-            </li>
-            <li data-view="planner">
-                <span class="nav-icon">📅</span><span class="nav-text">Study Planner</span>
-            </li>
-            <li data-view="profile">
-                <span class="nav-icon">🏆</span><span class="nav-text">Profile</span>
-            </li>
-            <li data-view="settings">
-                <span class="nav-icon">⚙️</span><span class="nav-text">Settings</span>
-            </li>
-        </ul>
+        <div class="sidebar-nav">
+            <p class="nav-section-label">Study</p>
+            <ul class="nav-links">
+                <li class="active" data-view="dashboard">
+                    <button type="button" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-text">Dashboard</span></button>
+                </li>
+                <li data-view="practice">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">☷</span><span class="nav-text">Practice Plan</span></button>
+                </li>
+                <li data-view="revisions">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">↻</span><span class="nav-text">Revisions</span></button>
+                </li>
+                <li data-view="questions">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-text">All Questions</span></button>
+                </li>
+                <li data-view="add-question">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">+</span><span class="nav-text">Add Question</span></button>
+                </li>
+            </ul>
+            <p class="nav-section-label">Progress</p>
+            <ul class="nav-links">
+                <li data-view="analytics">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">▥</span><span class="nav-text">Analytics</span></button>
+                </li>
+                <li data-view="growth">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">◇</span><span class="nav-text">Growth Intel</span></button>
+                </li>
+                <li data-view="planner">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">▦</span><span class="nav-text">Study Planner</span></button>
+                </li>
+                <li data-view="syllabus">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">▧</span><span class="nav-text">Syllabus</span></button>
+                </li>
+            </ul>
+            <p class="nav-section-label">Account</p>
+            <ul class="nav-links">
+                <li data-view="profile">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">◎</span><span class="nav-text">Profile</span></button>
+                </li>
+                <li data-view="settings">
+                    <button type="button"><span class="nav-icon" aria-hidden="true">⚙</span><span class="nav-text">Settings</span></button>
+                </li>
+            </ul>
+        </div>
         <div class="sidebar-footer">
             <div class="level-badge">
                 <span class="level-num" id="sidebar-level">1</span>
@@ -81,170 +92,114 @@
     <main id="main-content">
         <!-- Top Bar -->
         <header class="top-bar">
-            <button id="menu-toggle" class="menu-btn">☰</button>
+            <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
             <div class="top-bar-info">
-                <span class="greeting" id="greeting">Good Morning, Learner!</span>
-                <span class="date-display" id="date-display"></span>
+                <time class="date-display" id="date-display"></time>
             </div>
             <div class="top-bar-actions">
-                <button class="btn btn-sm btn-accent" id="quick-add-btn">+ Add Question</button>
-                <button class="theme-toggle" id="theme-toggle-btn" title="Switch Theme">
-                    <span class="theme-icon" id="theme-icon">🌙</span>
-                    <span id="theme-label">Dark</span>
+                <button class="btn btn-sm btn-accent" id="quick-add-btn" aria-label="Add Question"><span aria-hidden="true">+</span><span class="quick-add-label">Add question</span></button>
+                <button class="theme-toggle" id="theme-toggle-btn" title="Switch theme" aria-label="Switch theme">
+                    <span class="theme-icon" id="theme-icon" aria-hidden="true">☀</span>
+                    <span id="theme-label">Light</span>
                 </button>
                 <div class="streak-badge" id="top-streak">
                     <span class="streak-fire">🔥</span>
                     <span class="streak-count" id="streak-count">0</span>
                 </div>
-                <button class="notification-bell" id="notification-btn">
-                    🔔<span class="notif-dot" id="notif-dot" style="display:none"></span>
+                <button class="notification-bell" id="notification-btn" aria-label="Open revisions" title="Open revisions">
+                    <span aria-hidden="true">↻</span><span class="notif-dot" id="notif-dot" style="display:none"></span>
                 </button>
             </div>
         </header>
 
         <!-- ═══════════ VIEW: DASHBOARD ═══════════ -->
         <section class="view active" id="view-dashboard">
-            <h1 class="view-title">Dashboard</h1>
+            <header class="page-header">
+                <h1 class="view-title">Dashboard</h1>
+                <button type="button" class="btn btn-primary" id="dashboard-practice-btn">Open Practice Plan <span aria-hidden="true">↗</span></button>
+            </header>
 
-            <!-- Stats Cards -->
-            <div class="stats-grid">
-                <div class="stat-card stat-primary">
-                    <div class="stat-icon">📝</div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-due-today">0</span>
-                        <span class="stat-label">Due Today</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-danger">
-                    <div class="stat-icon">⚠️</div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-overdue">0</span>
-                        <span class="stat-label">Overdue</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-success">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-completed-today">0</span>
-                        <span class="stat-label">Done Today</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-warning">
-                    <div class="stat-icon">📚</div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-total-pending">0</span>
-                        <span class="stat-label">Total Pending</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-info">
-                    <div class="stat-icon">🔥</div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-streak">0</span>
-                        <span class="stat-label">Day Streak</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-accent">
-                    <div class="stat-icon">⭐</div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-productivity">0%</span>
-                        <span class="stat-label">Productivity</span>
-                    </div>
-                </div>
-            </div>
+            <dl class="dashboard-stats">
+                <div><dt>Practiced today</dt><dd id="stat-practiced-today">0</dd></div>
+                <div><dt>Reviewed today</dt><dd id="stat-completed-today">0</dd></div>
+                <div><dt>Reviews due today</dt><dd id="stat-due-today">0</dd></div>
+                <div><dt>Overdue reviews</dt><dd id="stat-overdue">0</dd></div>
+            </dl>
 
-            <!-- Today's Revisions Quick List -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>Today's Revisions</h2>
-                    <button class="btn btn-sm btn-outline" onclick="DSA.App.switchView('revisions')">View All →</button>
-                </div>
-                <div id="dashboard-revisions-list" class="revision-quick-list">
-                    <p class="empty-state">No revisions due today. You're all caught up! 🎉</p>
-                </div>
-            </div>
-
-            <!-- NEW: Timer Widget -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>⏱️ Focus Timer</h2>
-                </div>
-                <div class="timer-widget">
-                    <div class="timer-label">Study Focus Timer</div>
-                    <div class="timer-display" id="timer-display">00:00:00</div>
-                    <div class="timer-controls">
-                        <button class="timer-btn" id="timer-start" title="Start">▶</button>
-                        <button class="timer-btn" id="timer-pause" title="Pause">⏸</button>
-                        <button class="timer-btn" id="timer-reset" title="Reset">⏹</button>
+            <div class="dashboard-columns">
+                <section class="dashboard-panel dashboard-queue" aria-labelledby="dashboard-queue-title">
+                    <div class="section-header">
+                        <h2 id="dashboard-queue-title">Review queue</h2>
+                        <button class="btn btn-sm btn-outline" onclick="DSA.App.openRevisionQueue()">View revisions <span aria-hidden="true">→</span></button>
                     </div>
-                </div>
-            </div>
-
-            <!-- NEW: Progress by Topic -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>📊 Progress by Topic</h2>
-                </div>
-                <div class="progress-section" id="topic-progress-section">
-                    <!-- Dynamically populated -->
-                    <p class="empty-state">Add questions to see subject progress</p>
-                </div>
-            </div>
-
-            <!-- NEW: Difficulty Distribution -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>🎯 Difficulty Distribution</h2>
-                </div>
-                <div class="difficulty-distribution">
-                    <div class="diff-stat easy">
-                        <div class="diff-stat-value" id="diff-easy-count">0</div>
-                        <div class="diff-stat-label">Easy</div>
+                    <div id="dashboard-revisions-list" class="revision-quick-list">
+                        <p class="empty-state">No reviews are due.</p>
                     </div>
-                    <div class="diff-stat medium">
-                        <div class="diff-stat-value" id="diff-medium-count">0</div>
-                        <div class="diff-stat-label">Medium</div>
+                    <div class="dashboard-queue-footer">
+                        <span id="dashboard-practice-summary">No plan items ready</span>
+                        <span><strong id="stat-total-pending">0</strong> scheduled reviews</span>
                     </div>
-                    <div class="diff-stat hard">
-                        <div class="diff-stat-value" id="diff-hard-count">0</div>
-                        <div class="diff-stat-label">Hard</div>
-                    </div>
-                </div>
-            </div>
+                </section>
+                <section class="dashboard-panel daily-review" aria-labelledby="daily-review-title">
+                    <h2 id="daily-review-title">Daily review goal</h2>
+                    <strong id="stat-productivity">0%</strong>
+                    <progress id="daily-review-progress" value="0" max="100" aria-labelledby="daily-review-title"></progress>
+                    <p id="stat-productivity-detail">0 of 5 reviews today</p>
+                    <span class="daily-streak"><strong id="stat-streak">0</strong> day streak</span>
+                </section>
 
-            <!-- Heatmap -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>Activity Heatmap</h2>
-                </div>
-                <div class="heatmap-container" id="heatmap-container">
-                    <div class="heatmap-months" id="heatmap-months"></div>
-                    <div class="heatmap-grid" id="heatmap-grid"></div>
-                    <div class="heatmap-legend">
+                <section class="dashboard-panel dashboard-activity" aria-labelledby="activity-title">
+                    <div class="section-header">
+                        <h2 id="activity-title">Study activity</h2>
+                        <span id="study-activity-recency" class="activity-recency">No study activity yet</span>
+                    </div>
+                    <div class="heatmap-container" id="heatmap-container" tabindex="0" role="region" aria-label="Study activity calendar">
+                        <div class="heatmap-months" id="heatmap-months"></div>
+                        <div class="heatmap-grid" id="heatmap-grid"></div>
+                    </div>
+                    <div class="heatmap-legend" aria-label="Activity levels from less to more">
                         <span>Less</span>
-                        <div class="heatmap-cell" style="background:var(--hm-0)"></div>
-                        <div class="heatmap-cell" style="background:var(--hm-1)"></div>
-                        <div class="heatmap-cell" style="background:var(--hm-2)"></div>
-                        <div class="heatmap-cell" style="background:var(--hm-3)"></div>
-                        <div class="heatmap-cell" style="background:var(--hm-4)"></div>
+                        <span class="heatmap-cell" style="background:var(--hm-0)"></span>
+                        <span class="heatmap-cell" style="background:var(--hm-1)"></span>
+                        <span class="heatmap-cell" style="background:var(--hm-2)"></span>
+                        <span class="heatmap-cell" style="background:var(--hm-3)"></span>
+                        <span class="heatmap-cell" style="background:var(--hm-4)"></span>
                         <span>More</span>
                     </div>
-                </div>
-            </div>
+                </section>
+                <section class="dashboard-panel dashboard-timer" aria-labelledby="timer-title">
+                    <h2 id="timer-title">Focus timer</h2>
+                    <div class="timer-display" id="timer-display" role="timer">00:00:00</div>
+                    <div class="timer-controls">
+                        <button type="button" class="btn btn-primary" id="timer-start">Start</button>
+                        <button type="button" class="btn btn-outline" id="timer-pause">Pause</button>
+                        <button type="button" class="btn btn-outline" id="timer-reset">Reset</button>
+                    </div>
+                </section>
 
-            <!-- Recent Activity -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>Recent Activity</h2>
-                </div>
-                <div id="recent-activity" class="activity-feed">
-                    <p class="empty-state">No recent activity yet. Start by adding a topic!</p>
-                </div>
+                <section class="dashboard-panel" aria-labelledby="subject-progress-title">
+                    <div class="section-header"><h2 id="subject-progress-title">Subject progress</h2></div>
+                    <div class="progress-section" id="topic-progress-section">
+                        <p class="empty-state">Add questions to see subject progress.</p>
+                    </div>
+                    <div class="difficulty-distribution">
+                        <div class="diff-stat easy"><span class="diff-stat-value" id="diff-easy-count">0</span><span class="diff-stat-label">Easy</span></div>
+                        <div class="diff-stat medium"><span class="diff-stat-value" id="diff-medium-count">0</span><span class="diff-stat-label">Medium</span></div>
+                        <div class="diff-stat hard"><span class="diff-stat-value" id="diff-hard-count">0</span><span class="diff-stat-label">Hard</span></div>
+                    </div>
+                </section>
+                <section class="dashboard-panel" aria-labelledby="recent-activity-title">
+                    <div class="section-header"><h2 id="recent-activity-title">Recent activity</h2></div>
+                    <div id="recent-activity" class="activity-feed">
+                        <p class="empty-state">No study activity recorded yet.</p>
+                    </div>
+                </section>
             </div>
         </section>
 
         <!-- ═══════════ VIEW: ADD QUESTION ═══════════ -->
         <section class="view" id="view-add-question">
-            <h1 class="view-title">Log New Topic</h1>
+            <h1 class="view-title">Add a question</h1>
             <form id="question-form" class="form-card">
                 <input type="hidden" id="edit-question-id" value="">
 
@@ -367,26 +322,27 @@
 
             <!-- Filters -->
             <div class="filters-bar">
-                <input type="text" id="search-questions" class="search-input" placeholder="🔍 Search topics...">
-                <select id="filter-subject" class="filter-select">
+                <input type="search" id="search-questions" class="search-input" aria-label="Search questions" placeholder="Search questions">
+                <select id="filter-subject" class="filter-select" aria-label="Filter by subject">
                     <option value="">All Subjects</option>
                 </select>
-                <select id="filter-difficulty" class="filter-select">
+                <select id="filter-difficulty" class="filter-select" aria-label="Filter by difficulty">
                     <option value="">All Difficulties</option>
                     <option value="Easy">Easy</option>
                     <option value="Medium">Medium</option>
                     <option value="Hard">Hard</option>
                 </select>
-                <select id="filter-status" class="filter-select">
+                <select id="filter-status" class="filter-select" aria-label="Filter by status">
                     <option value="">All Status</option>
+                    <option value="Not Started">Not Started</option>
                     <option value="Solved">Studied</option>
                     <option value="Needs Revision">Needs Revision</option>
                     <option value="Mastered">Mastered</option>
                 </select>
-                <select id="filter-platform" class="filter-select">
+                <select id="filter-platform" class="filter-select" aria-label="Filter by source">
                     <option value="">All Sources</option>
                 </select>
-                <select id="sort-questions" class="filter-select">
+                <select id="sort-questions" class="filter-select" aria-label="Sort questions">
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
                     <option value="name">Name A-Z</option>
@@ -409,19 +365,65 @@
             </div>
         </section>
 
+        <!-- ═══════════ VIEW: PRACTICE PLAN ═══════════ -->
+        <section class="view" id="view-practice" aria-labelledby="practice-title">
+            <div class="practice-heading">
+                <h1 class="view-title" id="practice-title">Practice Plan</h1>
+                <p>Paste a list and start with five questions a day.</p>
+            </div>
+
+            <div class="practice-layout">
+                <details id="practice-import-panel" class="form-card practice-import-panel" open>
+                    <summary>Add a question list</summary>
+                    <form id="practice-form" class="practice-import">
+                        <p id="practice-hint">Use one question per line. Add <strong>Topic: Arrays</strong> above the list to name your plan.</p>
+                        <div class="form-group">
+                            <label for="practice-input">Questions</label>
+                            <textarea id="practice-input" rows="8" required aria-describedby="practice-hint" placeholder="Topic: Arrays&#10;1. Two Sum&#10;2. Best Time to Buy and Sell Stock&#10;3. https://leetcode.com/problems/contains-duplicate/"></textarea>
+                        </div>
+                        <p id="practice-preview" class="practice-preview" aria-live="polite"></p>
+                        <button class="btn btn-primary" type="submit">Create plan</button>
+                        <p id="practice-message" class="practice-message" role="status"></p>
+                    </form>
+                </details>
+
+                <div class="practice-workspace">
+                    <div class="practice-toolbar">
+                        <div class="form-group">
+                            <label for="practice-select">Plan</label>
+                            <select id="practice-select" disabled></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="practice-filter">Show</label>
+                            <select id="practice-filter">
+                                <option value="all">All questions</option>
+                                <option value="due">Needs action</option>
+                                <option value="pending">Not done</option>
+                                <option value="completed">Done</option>
+                                <option value="revised">Revised</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="practice-summary" class="practice-summary" aria-live="polite"></div>
+                    <div id="practice-list" class="practice-list"></div>
+                </div>
+            </div>
+        </section>
+
         <!-- ═══════════ VIEW: REVISIONS ═══════════ -->
         <section class="view" id="view-revisions">
-            <h1 class="view-title">Revision Checklist</h1>
+            <h1 class="view-title">Revisions</h1>
 
-            <div class="revision-tabs">
-                <button class="rev-tab active" data-tab="due">Due Today <span class="badge" id="badge-due">0</span></button>
-                <button class="rev-tab" data-tab="overdue">Overdue <span class="badge badge-danger" id="badge-overdue">0</span></button>
-                <button class="rev-tab" data-tab="upcoming">Upcoming</button>
-                <button class="rev-tab" data-tab="completed">Completed Today</button>
+            <div class="revision-tabs" role="group" aria-label="Show revisions">
+                <button class="rev-tab active" data-tab="due" aria-pressed="true">Due Today <span class="badge" id="badge-due">0</span></button>
+                <button class="rev-tab" data-tab="overdue" aria-pressed="false">Overdue <span class="badge badge-danger" id="badge-overdue">0</span></button>
+                <button class="rev-tab" data-tab="upcoming" aria-pressed="false">Upcoming</button>
+                <button class="rev-tab" data-tab="completed" aria-pressed="false">Completed Today</button>
+                <button class="rev-tab" data-tab="practice" aria-pressed="false">Practice Queue <span class="badge" id="badge-practice">0</span></button>
             </div>
 
             <div class="revision-filter-row">
-                <select id="rev-filter-subject" class="filter-select">
+                <select id="rev-filter-subject" class="filter-select" aria-label="Filter revisions by subject">
                     <option value="">All Subjects</option>
                 </select>
             </div>
@@ -433,7 +435,8 @@
 
         <!-- ═══════════ VIEW: ANALYTICS ═══════════ -->
         <section class="view" id="view-analytics">
-            <h1 class="view-title">Performance Analytics</h1>
+            <h1 class="view-title">Analytics</h1>
+            <p id="analytics-offline" class="empty-state" hidden>Interactive charts are unavailable. The activity heatmap and mastery table are still available.</p>
 
             <div class="analytics-grid">
                 <!-- Topics Studied Over Time -->
@@ -490,7 +493,7 @@
                 <div class="section-header">
                     <h2>Subject-wise Mastery</h2>
                 </div>
-                <div class="mastery-table-container">
+                <div class="mastery-table-container" tabindex="0" role="region" aria-label="Subject mastery table">
                     <table class="mastery-table" id="mastery-table">
                         <thead>
                             <tr>
@@ -575,12 +578,12 @@
 
         <!-- ═══════════ VIEW: SYLLABUS ═══════════ -->
         <section class="view" id="view-syllabus">
-            <h1 class="view-title">📚 Syllabus Manager</h1>
+            <h1 class="view-title">Syllabus</h1>
 
             <!-- Add Syllabus Form -->
             <div class="dashboard-section">
                 <div class="section-header">
-                    <h2>➕ Add / Manage Syllabus</h2>
+                    <h2>Add a syllabus</h2>
                 </div>
                 <form id="syllabus-form" class="form-card syllabus-form-card">
                     <div class="form-row">
@@ -651,7 +654,7 @@
             <!-- Syllabus List -->
             <div class="dashboard-section">
                 <div class="section-header">
-                    <h2>📋 My Syllabi</h2>
+                    <h2>My syllabi</h2>
                     <div class="syllabus-filter-row">
                         <select id="syl-filter-stream" class="filter-select">
                             <option value="">All Streams</option>
@@ -666,7 +669,7 @@
             <!-- Syllabus Progress Overview -->
             <div class="dashboard-section">
                 <div class="section-header">
-                    <h2>📊 Overall Syllabus Progress</h2>
+                    <h2>Syllabus progress</h2>
                 </div>
                 <div id="syllabus-progress-overview" class="syllabus-progress-overview">
                     <p class="empty-state">Add syllabi and mark topics as completed to see your progress.</p>
@@ -676,73 +679,42 @@
 
         <!-- ═══════════ VIEW: STUDY PLANNER ═══════════ -->
         <section class="view" id="view-planner">
-            <h1 class="view-title">📅 Study Planner</h1>
+            <h1 class="view-title">Study Planner</h1>
 
-            <!-- Goals Section -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>🎯 Weekly Goals</h2>
-                    <button class="btn btn-sm btn-accent" id="add-goal-btn">+ Add Goal</button>
-                </div>
-                
-                <div class="goal-tracker">
-                    <div class="goal-header">
-                        <div class="goal-title">This Week's Target</div>
-                        <div class="goal-status">
-                            <span id="goal-completed">0</span> / <span id="goal-target">10</span> topics
+            <div class="planner-columns">
+                <div class="planner-stack">
+                    <section class="dashboard-panel weekly-progress" aria-labelledby="weekly-goal-title">
+                        <h2 id="weekly-goal-title">Weekly practice goal</h2>
+                        <strong id="goal-percentage">0%</strong>
+                        <progress id="goal-progress" max="100" value="0" aria-labelledby="weekly-goal-title"></progress>
+                        <p><span id="goal-completed">0</span> of <span id="goal-target">10</span> questions practiced this week</p>
+                    </section>
+                    <section class="dashboard-panel" aria-labelledby="planner-calendar-title">
+                        <div class="section-header"><h2 id="planner-calendar-title">Calendar</h2></div>
+                        <div class="calendar-header">
+                            <button class="calendar-nav-btn" id="cal-prev-month" aria-label="Previous month">‹</button>
+                            <div class="calendar-month" id="cal-month-year" aria-live="polite"></div>
+                            <button class="calendar-nav-btn" id="cal-next-month" aria-label="Next month">›</button>
                         </div>
-                    </div>
-                    <div class="goal-progress-ring">
-                        <svg viewBox="0 0 100 100">
-                            <defs>
-                                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style="stop-color:var(--accent);stop-opacity:1" />
-                                    <stop offset="100%" style="stop-color:var(--success);stop-opacity:1" />
-                                </linearGradient>
-                            </defs>
-                            <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
-                            <circle class="ring-progress" id="goal-ring" cx="50" cy="50" r="42"
-                                    stroke-dasharray="264" stroke-dashoffset="264"
-                                    transform="rotate(-90 50 50)"></circle>
-                        </svg>
-                        <div class="goal-percentage" id="goal-percentage">0%</div>
-                    </div>
+                        <div class="calendar-grid">
+                            <div class="calendar-day-header">Sun</div>
+                            <div class="calendar-day-header">Mon</div>
+                            <div class="calendar-day-header">Tue</div>
+                            <div class="calendar-day-header">Wed</div>
+                            <div class="calendar-day-header">Thu</div>
+                            <div class="calendar-day-header">Fri</div>
+                            <div class="calendar-day-header">Sat</div>
+                            <div id="calendar-days-container"></div>
+                        </div>
+                    </section>
                 </div>
-            </div>
 
-            <!-- Calendar -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>📆 Calendar View</h2>
-                </div>
-                <div class="study-planner">
-                    <div class="calendar-header">
-                        <button class="calendar-nav-btn" id="cal-prev-month">◀</button>
-                        <div class="calendar-month" id="cal-month-year">January 2026</div>
-                        <button class="calendar-nav-btn" id="cal-next-month">▶</button>
-                    </div>
-                    <div class="calendar-grid">
-                        <div class="calendar-day-header">Sun</div>
-                        <div class="calendar-day-header">Mon</div>
-                        <div class="calendar-day-header">Tue</div>
-                        <div class="calendar-day-header">Wed</div>
-                        <div class="calendar-day-header">Thu</div>
-                        <div class="calendar-day-header">Fri</div>
-                        <div class="calendar-day-header">Sat</div>
-                        <!-- Days populated dynamically -->
-                        <div id="calendar-days-container"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Upcoming Schedule -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h2>📋 Upcoming Schedule</h2>
-                </div>
-                <div class="activity-feed" id="upcoming-schedule">
-                    <p class="empty-state">No scheduled tasks yet</p>
-                </div>
+                <section class="dashboard-panel" aria-labelledby="planner-schedule-title">
+                    <div class="section-header"><h2 id="planner-schedule-title">Next 14 days</h2></div>
+                    <ol class="schedule-list" id="upcoming-schedule">
+                        <li class="empty-state">Nothing scheduled in the next 14 days.</li>
+                    </ol>
+                </section>
             </div>
         </section>
 
@@ -808,13 +780,13 @@
 
                 <!-- Streak Card -->
                 <div class="streak-card">
-                    <h3>🔥 Streak Calendar</h3>
+                    <h3>Streak calendar</h3>
                     <div class="streak-week" id="streak-week"></div>
                 </div>
 
                 <!-- Badges -->
                 <div class="badges-card">
-                    <h3>🏅 Badges & Milestones</h3>
+                    <h3>Badges and milestones</h3>
                     <div class="badges-grid" id="badges-grid">
                         <!-- Populated dynamically -->
                     </div>
@@ -834,7 +806,7 @@
                         <input type="number" id="set-total-cycles" min="1" max="30" value="15">
                     </div>
                     <div class="setting-item">
-                        <label for="set-daily-goal">Daily Revision Goal</label>
+                        <label for="set-daily-goal">Daily review goal</label>
                         <input type="number" id="set-daily-goal" min="1" max="50" value="5">
                     </div>
                     <div class="setting-item">
@@ -848,16 +820,16 @@
                     <div class="setting-item">
                         <label>Theme</label>
                         <div class="theme-selector" id="theme-selector">
-                            <div class="theme-option active" data-theme="dark">
-                                <div class="theme-option-preview theme-preview-dark"></div>
-                                <div class="theme-option-name">Dark</div>
-                                <div class="theme-option-desc">Deep space purple</div>
-                            </div>
-                            <div class="theme-option" data-theme="obsidian">
-                                <div class="theme-option-preview theme-preview-obsidian"></div>
-                                <div class="theme-option-name">Obsidian</div>
-                                <div class="theme-option-desc">Premium B&W</div>
-                            </div>
+                            <button type="button" class="theme-option" data-theme="dark" aria-pressed="false">
+                                <span class="theme-option-preview theme-preview-dark"></span>
+                                <span class="theme-option-name">Dark</span>
+                                <span class="theme-option-desc">Dark surfaces</span>
+                            </button>
+                            <button type="button" class="theme-option active" data-theme="obsidian" aria-pressed="true">
+                                <span class="theme-option-preview theme-preview-obsidian"></span>
+                                <span class="theme-option-name">Light</span>
+                                <span class="theme-option-desc">Light surfaces</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -881,7 +853,8 @@
                 </div>
 
                 <div class="settings-card">
-                    <h3>Data Management</h3>
+                    <h3>Data and backups</h3>
+                    <p class="settings-note">Your study data is stored in this browser. Export a backup to keep a copy or move to another device.</p>
                     <div class="setting-item">
                         <button class="btn btn-primary" id="settings-export-btn">📥 Export All Data (JSON)</button>
                     </div>
@@ -921,10 +894,10 @@
     </main>
 
     <!-- ═══════════ MODAL: REVISION DIALOG ═══════════ -->
-    <div class="modal-overlay" id="revision-modal">
+    <dialog class="modal-overlay" id="revision-modal" aria-labelledby="revision-modal-title">
         <div class="modal">
-            <button class="modal-close" id="modal-close">✕</button>
-            <h2 class="modal-title">Complete Revision</h2>
+            <button class="modal-close" id="modal-close" aria-label="Close revision" autofocus>✕</button>
+            <h2 class="modal-title" id="revision-modal-title">Complete Revision</h2>
             <div class="modal-body">
                 <p class="modal-question-name" id="modal-q-name"></p>
                 <p class="modal-question-meta" id="modal-q-meta"></p>
@@ -966,12 +939,12 @@
                 <button class="btn btn-outline" id="modal-skip-btn">Skip</button>
             </div>
         </div>
-    </div>
+    </dialog>
 
     <!-- ═══════════ MODAL: QUESTION DETAIL ═══════════ -->
-    <div class="modal-overlay" id="detail-modal">
+    <dialog class="modal-overlay" id="detail-modal" aria-labelledby="detail-title">
         <div class="modal modal-lg">
-            <button class="modal-close" id="detail-modal-close">✕</button>
+            <button class="modal-close" id="detail-modal-close" aria-label="Close topic details" autofocus>✕</button>
             <h2 class="modal-title" id="detail-title">Topic Details</h2>
             <div class="modal-body" id="detail-body">
                 <!-- Populated dynamically -->
@@ -983,13 +956,13 @@
                 <button class="btn btn-danger" id="detail-delete-btn">🗑️ Delete</button>
             </div>
         </div>
-    </div>
+    </dialog>
 
     <!-- ═══════════ CALENDAR ENTRY MODAL ═══════════ -->
-    <div class="modal-overlay" id="calendar-entry-modal">
+    <dialog class="modal-overlay" id="calendar-entry-modal" aria-labelledby="calendar-entry-title">
         <div class="modal modal-md">
-            <button class="modal-close" id="calendar-entry-close">✕</button>
-            <h2 class="modal-title" id="calendar-entry-title">📅 Add Calendar Entry</h2>
+            <button class="modal-close" id="calendar-entry-close" aria-label="Close calendar entry" autofocus>✕</button>
+            <h2 class="modal-title" id="calendar-entry-title">Calendar entry</h2>
             <div class="modal-body">
                 <form id="calendar-entry-form">
                     <div class="form-group">
@@ -1015,66 +988,13 @@
                 <button class="btn btn-primary" id="calendar-entry-save">💾 Save</button>
             </div>
         </div>
-    </div>
+    </dialog>
 
     <!-- ═══════════ TOAST NOTIFICATIONS ═══════════ -->
-    <div id="toast-container" class="toast-container"></div>
+    <div id="toast-container" class="toast-container" role="status"></div>
 
     <!-- ═══════════ CONFETTI CANVAS ═══════════ -->
     <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
-
-    <!-- Firebase SDK (modular compat for future full-stack) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-    
-    <!-- Firebase Configuration (optional for local-only mode) -->
-    <script src="js/config.js"></script>
-    <script>
-        let firebaseApp = null;
-        let analytics = null;
-        let db = null;
-        let auth = null;
-
-        (() => {
-            const hasFirebaseSdk = typeof firebase !== 'undefined';
-            const hasFirebaseConfig =
-                typeof firebaseConfig !== 'undefined' &&
-                firebaseConfig &&
-                typeof firebaseConfig === 'object';
-
-            if (!hasFirebaseSdk || !hasFirebaseConfig) {
-                console.info('🔥 Firebase config not found — running in local-only mode.');
-                return;
-            }
-
-            try {
-                firebaseApp = firebase.apps && firebase.apps.length
-                    ? firebase.app()
-                    : firebase.initializeApp(firebaseConfig);
-
-                if (firebase.firestore) db = firebase.firestore();
-                if (firebase.auth) auth = firebase.auth();
-
-                if (firebase.analytics && window.location.protocol !== 'file:') {
-                    try {
-                        analytics = firebase.analytics();
-                    } catch (error) {
-                        console.warn('🔥 Firebase Analytics unavailable:', error);
-                    }
-                }
-
-                console.log('🔥 Firebase initialized — Firestore and Auth ready');
-            } catch (error) {
-                console.warn('🔥 Firebase initialization skipped. Running in local-only mode.', error);
-                firebaseApp = null;
-                analytics = null;
-                db = null;
-                auth = null;
-            }
-        })();
-    </script>
 
     <!-- Scripts (order matters) -->
     <script src="js/store.js"></script>
@@ -1083,6 +1003,7 @@
     <script src="js/charts.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/modern-features.js"></script>
+    <script src="js/practice-plan.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

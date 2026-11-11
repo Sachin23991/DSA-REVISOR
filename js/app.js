@@ -9,6 +9,7 @@ DSA.App = (() => {
     let currentView = 'dashboard';
     let currentRevisionTab = 'due';
     let currentRevisionQuestionId = null;
+    let displayedDate;
 
     // ════════════ INITIALIZATION ════════════
     function init() {
@@ -23,16 +24,20 @@ DSA.App = (() => {
         setupExportImport();
         setupMiscUI();
         setupSyllabus();
+        DSA.PracticePlan.init();
+        setupStorageRefresh();
 
         // Set default date for form
-        document.getElementById('q-date').value = DSA.Store.todayStr();
+        displayedDate = DSA.Store.todayStr();
+        const studiedDate = document.getElementById('q-date');
+        studiedDate.value = displayedDate;
+        studiedDate.max = displayedDate;
+        setInterval(refreshStudyDate, 60000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) refreshStudyDate();
+        });
 
-        // Greeting
-        updateGreeting();
         updateDateDisplay();
-
-        // Check streak on load
-        DSA.Gamification.checkStreak();
 
         // Load initial view
         refreshDashboard();
@@ -45,34 +50,71 @@ DSA.App = (() => {
         // Populate filter dropdowns
         populateFilterOptions();
 
-        // ☁️ Sync from Firestore on startup (hydrate local cache)
-        if (DSA.Store.syncFromFirestore) {
-            DSA.Store.syncFromFirestore().then(synced => {
-                if (synced) {
-                    console.log('☁️ Cloud sync complete — refreshing UI');
-                    refreshDashboard();
-                    refreshQuestionsList();
-                    refreshRevisions();
-                    refreshAnalytics();
-                    refreshGrowth();
-                    refreshProfile();
-                    refreshSyllabus();
-                    showToast('☁️ Synced with cloud!', 'success');
-                }
-            });
-        }
-
         // Auto-delete old topics if configured
         const autoDeleteDays = DSA.Store.getSettings().autoDeleteAfterDays || 0;
         if (autoDeleteDays > 0) {
-            const deleted = DSA.Store.deleteOldTopics(autoDeleteDays);
-            if (deleted > 0) {
-                showToast(`🗑️ Auto-deleted ${deleted} topic(s) older than ${autoDeleteDays} days.`, 'info');
-                refreshDashboard();
-                refreshQuestionsList();
-                refreshRevisions();
+            try {
+                const deleted = DSA.Store.deleteOldTopics(autoDeleteDays);
+                if (deleted > 0) {
+                    showToast(`Removed ${deleted} ${deleted === 1 ? 'topic' : 'topics'} older than ${autoDeleteDays} days.`, 'info');
+                    populateFilterOptions();
+                    refreshDashboard();
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
             }
         }
+    }
+
+    function setupStorageRefresh() {
+        const studyKeys = new Set(Object.values(DSA.Store.KEYS));
+        const changedKeys = new Set();
+        let pendingRefresh;
+        window.addEventListener('storage', event => {
+            if (event.storageArea !== localStorage || (event.key !== null && !studyKeys.has(event.key))) return;
+            changedKeys.add(event.key);
+            clearTimeout(pendingRefresh);
+            pendingRefresh = setTimeout(() => {
+                const settingsChanged = changedKeys.has(null) || changedKeys.has(DSA.Store.KEYS.SETTINGS);
+                changedKeys.clear();
+                populateFilterOptions();
+                updateSidebarXP();
+                renderCurrentStreak(DSA.Gamification.getCurrentStreak());
+                DSA.Notifications.updateNotificationDot();
+
+                switch (currentView) {
+                    case 'dashboard': refreshDashboard(); break;
+                    case 'questions': refreshQuestionsList(); break;
+                    case 'practice': DSA.PracticePlan.render(); break;
+                    case 'revisions': refreshRevisions(); break;
+                    case 'analytics': refreshAnalytics(); break;
+                    case 'growth': refreshGrowth(); break;
+                    case 'syllabus': refreshSyllabus(); break;
+                    case 'planner': refreshPlanner(); break;
+                    case 'profile': refreshProfile(); break;
+                    case 'settings': if (settingsChanged) loadSettings(true); break;
+                }
+            }, 60);
+        });
+    }
+
+    function refreshStudyDate() {
+        const today = DSA.Store.todayStr();
+        if (displayedDate === today) return;
+        const date = document.getElementById('q-date');
+        date.max = today;
+        if (!document.getElementById('edit-question-id').value && date.value === displayedDate) date.value = today;
+        displayedDate = today;
+        updateDateDisplay();
+        renderCurrentStreak(DSA.Gamification.getCurrentStreak());
+        DSA.Notifications.updateNotificationDot();
+        if (currentView === 'dashboard') refreshDashboard();
+        if (currentView === 'revisions') refreshRevisions();
+        if (currentView === 'practice') DSA.PracticePlan.render();
+        if (currentView === 'planner') refreshPlanner();
+        if (currentView === 'profile') refreshProfile();
+        if (currentView === 'analytics') refreshAnalytics();
+        if (currentView === 'growth') refreshGrowth();
     }
 
     // ════════════ NAVIGATION ════════════
@@ -88,89 +130,136 @@ DSA.App = (() => {
         document.getElementById('menu-toggle').addEventListener('click', () => {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
+            const open = sidebar.classList.toggle('open');
+            overlay.classList.toggle('active', open);
+            document.getElementById('menu-toggle').setAttribute('aria-expanded', String(open));
+            document.getElementById('main-content').inert = open;
+            if (open) sidebar.querySelector('[aria-current="page"]').focus({ preventScroll: true });
         });
 
-        // Close sidebar on overlay click
-        document.getElementById('sidebar-overlay').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebar-overlay').classList.remove('active');
+        const dismissSidebar = () => {
+            closeSidebar();
+            document.getElementById('menu-toggle').focus();
+        };
+        document.getElementById('sidebar-overlay').addEventListener('click', dismissSidebar);
+        document.getElementById('sidebar-close').addEventListener('click', dismissSidebar);
+        window.matchMedia('(max-width: 900px)').addEventListener('change', event => {
+            if (!event.matches) closeSidebar();
         });
 
         // Close sidebar on view click (mobile)
         document.addEventListener('click', (e) => {
             const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
             const toggle = document.getElementById('menu-toggle');
             if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== toggle && e.target.id !== 'sidebar-overlay') {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('active');
+                closeSidebar();
             }
         });
 
         // Quick add button
-        document.getElementById('quick-add-btn').addEventListener('click', () => switchView('add-question'));
+        document.getElementById('quick-add-btn').addEventListener('click', () => {
+            resetQuestionForm();
+            switchView('add-question');
+        });
+        document.getElementById('dashboard-practice-btn').addEventListener('click', () => switchView('practice'));
 
         // Notification bell
-        document.getElementById('notification-btn').addEventListener('click', () => switchView('revisions'));
+        document.getElementById('notification-btn').addEventListener('click', openRevisionQueue);
+    }
+
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+        document.getElementById('menu-toggle').setAttribute('aria-expanded', 'false');
+        document.getElementById('main-content').inert = false;
     }
 
     function switchView(view) {
+        const activeView = document.getElementById(`view-${view}`);
+        if (!activeView) return;
         currentView = view;
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById(`view-${view}`).classList.add('active');
+        activeView.classList.add('active');
 
         document.querySelectorAll('.nav-links li').forEach(li => {
             li.classList.toggle('active', li.dataset.view === view);
+            const button = li.querySelector('button');
+            if (li.dataset.view === view) button.setAttribute('aria-current', 'page');
+            else button.removeAttribute('aria-current');
         });
 
         // Close mobile sidebar
-        document.getElementById('sidebar').classList.remove('open');
-        document.getElementById('sidebar-overlay').classList.remove('active');
+        closeSidebar();
 
         // Refresh view content
         switch (view) {
             case 'dashboard': refreshDashboard(); break;
             case 'questions': refreshQuestionsList(); break;
+            case 'practice': DSA.PracticePlan.render(); break;
             case 'revisions': refreshRevisions(); break;
             case 'analytics': refreshAnalytics(); break;
             case 'growth': refreshGrowth(); break;
             case 'syllabus': refreshSyllabus(); break;
+            case 'planner': refreshPlanner(); break;
             case 'profile': refreshProfile(); break;
             case 'settings': loadSettings(); break;
         }
+        const heading = activeView.querySelector('h1');
+        if (heading) {
+            heading.tabIndex = -1;
+            heading.focus({ preventScroll: true });
+        }
+        window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
     // ════════════ DASHBOARD ════════════
     function refreshDashboard() {
-        const dueToday = DSA.RevisionEngine.getDueToday();
+        const today = DSA.Store.todayStr();
+        const activity = DSA.RevisionEngine.getStudyActivity(today);
+        const dueToday = DSA.RevisionEngine.getDueExactlyToday();
         const overdue = DSA.RevisionEngine.getOverdue();
-        const completedToday = DSA.RevisionEngine.getCompletedToday();
         const totalPending = DSA.RevisionEngine.getTotalPending();
-        const stats = DSA.Store.getUserStats();
-        const productivity = DSA.RevisionEngine.getProductivityScore();
+        const { completed, goal, percentage } = DSA.RevisionEngine.getDailyReviewProgress(today, activity);
 
         // Update stat cards
         document.getElementById('stat-due-today').textContent = dueToday.length;
         document.getElementById('stat-overdue').textContent = overdue.length;
-        document.getElementById('stat-completed-today').textContent = completedToday.length;
+        document.getElementById('stat-completed-today').textContent = completed;
         document.getElementById('stat-total-pending').textContent = totalPending;
-        document.getElementById('stat-streak').textContent = stats.currentStreak || 0;
-        document.getElementById('stat-productivity').textContent = productivity + '%';
+        document.getElementById('stat-productivity').textContent = `${percentage}%`;
+        renderCurrentStreak(DSA.Gamification.getCurrentStreak(activity, today));
 
-        // Streak count in top bar
-        document.getElementById('streak-count').textContent = stats.currentStreak || 0;
+        const practiced = document.getElementById('stat-practiced-today');
+        if (practiced) practiced.textContent = activity.get(today)?.practiced || 0;
+        const reviewSummary = `${completed} of ${goal} reviews today`;
+        const goalDetail = document.getElementById('stat-productivity-detail');
+        if (goalDetail) goalDetail.textContent = reviewSummary;
+        const progress = document.getElementById('daily-review-progress');
+        if (progress) {
+            progress.value = percentage;
+            progress.setAttribute('aria-valuetext', reviewSummary);
+        }
+        const practiceSummary = document.getElementById('dashboard-practice-summary');
+        if (practiceSummary) {
+            const ready = DSA.PracticePlan.getQueue(today).length;
+            practiceSummary.textContent = ready ? `${ready} plan ${ready === 1 ? 'item' : 'items'} ready` : 'No plan items ready';
+        }
 
         // Today's revisions quick list
-        renderDashboardRevisions(dueToday.slice(0, 5));
+        renderDashboardRevisions(DSA.RevisionEngine.getPriorityRevisions(5));
 
         // Topic progress & difficulty distribution widgets
         DSA.ModernFeatures.updateTopicProgress();
         DSA.ModernFeatures.updateDifficultyDistribution();
+        DSA.ModernFeatures.updateGoalTracker(activity);
 
         // Heatmap
-        DSA.Charts.renderHeatmap();
+        DSA.Charts.renderHeatmap(activity);
+        const activeDates = [...activity.keys()].sort();
+        const lastDate = activeDates[activeDates.length - 1];
+        const recency = document.getElementById('study-activity-recency');
+        recency.textContent = !lastDate ? 'No study activity yet' : lastDate === today ? 'Last studied today' :
+            `Last studied ${new Date(lastDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
         // Recent Activity
         renderRecentActivity();
@@ -179,20 +268,26 @@ DSA.App = (() => {
         DSA.Notifications.updateNotificationDot();
     }
 
+    function renderCurrentStreak(streak) {
+        document.getElementById('stat-streak').textContent = streak;
+        const topBarStreak = document.getElementById('streak-count');
+        if (topBarStreak) topBarStreak.textContent = streak;
+    }
+
     function renderDashboardRevisions(questions) {
         const container = document.getElementById('dashboard-revisions-list');
         if (questions.length === 0) {
-            container.innerHTML = '<p class="empty-state">No revisions due today. You\'re all caught up! 🎉</p>';
+            container.innerHTML = '<p class="empty-state">No reviews are due.</p>';
             return;
         }
 
         const settings = DSA.Store.getSettings();
         container.innerHTML = questions.map(q => `
-            <div class="rev-quick-item" data-id="${q.id}">
-                <div class="q-difficulty-dot ${q.difficulty.toLowerCase()}"></div>
+            <div class="rev-quick-item" data-id="${escapeHtml(q.id)}">
+                <div class="q-difficulty-dot ${escapeHtml(q.difficulty.toLowerCase())}"></div>
                 <span class="q-name">${escapeHtml(q.name)}</span>
-                <span class="rev-cycle">${q.revisionCycle}/${settings.totalCycles || 15}</span>
-                <button class="btn btn-sm btn-accent" onclick="DSA.App.openRevisionModal('${q.id}')">Revise</button>
+                <span class="rev-cycle">${escapeHtml(q.revisionCycle)}/${settings.totalCycles || 15}</span>
+                <button class="btn btn-sm btn-accent" onclick="DSA.App.openRevisionModal(${inlineId(q.id)})">Revise</button>
             </div>
         `).join('');
     }
@@ -202,7 +297,7 @@ DSA.App = (() => {
         const log = DSA.Store.getActivityLog().slice(0, 10);
 
         if (log.length === 0) {
-            container.innerHTML = '<p class="empty-state">No recent activity yet. Start by adding a topic!</p>';
+            container.innerHTML = '<p class="empty-state">No study activity recorded yet.</p>';
             return;
         }
 
@@ -238,27 +333,47 @@ DSA.App = (() => {
         });
 
         // Reset button
-        document.getElementById('form-reset-btn').addEventListener('click', () => {
-            document.getElementById('edit-question-id').value = '';
-            document.getElementById('form-submit-btn').textContent = 'Save Topic';
-            document.getElementById('form-back-btn').style.display = 'none';
-            document.getElementById('q-date').value = DSA.Store.todayStr();
+        document.getElementById('form-reset-btn').addEventListener('click', event => {
+            event.preventDefault();
+            resetQuestionForm();
         });
+    }
+
+    function setConfidence(value) {
+        document.getElementById('q-confidence').value = value;
+        document.querySelectorAll('#q-confidence-rating .conf-btn').forEach(btn => {
+            btn.classList.toggle('active', Number(btn.dataset.value) === value);
+        });
+    }
+
+    function resetQuestionForm() {
+        document.getElementById('question-form').reset();
+        document.getElementById('edit-question-id').value = '';
+        document.getElementById('form-submit-btn').textContent = 'Save Topic';
+        document.getElementById('form-back-btn').style.display = 'none';
+        document.getElementById('q-date').value = DSA.Store.todayStr();
+        setConfidence(4);
+    }
+
+    function recordQuestionStudy(question) {
+        const xp = { Easy: 5, Medium: 10, Hard: 15 }[question.difficulty] || 5;
+        const today = DSA.Store.todayStr();
+        const dateStudied = question.dateSolved || today;
+        DSA.Gamification.awardXP(xp, 'Question studied');
+        DSA.Store.logDailyActivity(dateStudied, 'solved');
+        DSA.Store.addDailyXP(dateStudied, xp);
+        const streak = dateStudied === today ? DSA.Gamification.updateStreak() : DSA.Gamification.getCurrentStreak();
+        renderCurrentStreak(streak);
+        DSA.Gamification.checkBadges();
+        return xp;
     }
 
     function handleQuestionSubmit(e) {
         e.preventDefault();
-        const startTime = performance.now();
-        console.log('Form submitted - attempting to save question...');
-
-        // Add loading state
         const submitBtn = document.getElementById('form-submit-btn');
-        const originalText = submitBtn.textContent;
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Saving...';
 
         try {
-            const dataCollectStart = performance.now();
             const editId = document.getElementById('edit-question-id').value;
             const questionData = {
                 name: document.getElementById('q-name').value.trim(),
@@ -275,74 +390,42 @@ DSA.App = (() => {
                 status: document.getElementById('q-status').value,
                 initialConfidence: parseInt(document.getElementById('q-confidence').value) || 4
             };
-            console.log(`⏱️ Data collection: ${(performance.now() - dataCollectStart).toFixed(2)}ms`);
-
-        if (editId) {
-            // Update existing
-            DSA.Store.updateQuestion(editId, questionData);
-            showToast('Topic updated successfully!', 'success');
-            document.getElementById('edit-question-id').value = '';
-            document.getElementById('form-submit-btn').textContent = 'Save Topic';
-            document.getElementById('form-back-btn').style.display = 'none';
-        } else {
-            // Add new question
-            const addStart = performance.now();
-            const q = DSA.Store.addQuestion(questionData);
-            console.log(`⏱️ Store.addQuestion: ${(performance.now() - addStart).toFixed(2)}ms`);
-
-            // XP for adding question
-            const xp = { 'Easy': 5, 'Medium': 10, 'Hard': 15 }[q.difficulty] || 5;
-            DSA.Gamification.awardXP(xp, 'New question added');
-
-            // Log daily activity
-            DSA.Store.logDailyActivity(DSA.Store.todayStr(), 'solved');
-
-            // Update streak
-            DSA.Gamification.updateStreak();
-
-            // Check badges
-            DSA.Gamification.checkBadges();
-            console.log(`⏱️ Total add operation: ${(performance.now() - addStart).toFixed(2)}ms`);
-
-            showToast(`"${q.name}" added! +${xp} XP`, 'success');
-        }
-
-        // Reset form
-        e.target.reset();
-        document.getElementById('q-date').value = DSA.Store.todayStr();
-        document.getElementById('q-important-note').value = '';
-        document.querySelectorAll('#q-confidence-rating .conf-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector('#q-confidence-rating .conf-btn[data-value="4"]').classList.add('active');
-        document.getElementById('q-confidence').value = '4';
-
-        // Update sidebar XP
-        updateSidebarXP();
-        
-        // Defer expensive UI updates to next tick (non-blocking)
-        setTimeout(() => {
-            populateFilterOptions();
-            populateSubjectSuggestions();
-            
-            // Navigate to "All Questions" view to show the saved question
-            if (!editId) {  // Only navigate for new questions, not edits
-                setTimeout(() => {
-                    switchView('questions');
-                }, 300);  // Small delay to show the toast message first
+            if (!questionData.name || !questionData.subject) throw new Error('Enter a question and subject.');
+            if (!questionData.dateSolved || questionData.dateSolved > DSA.Store.todayStr()) {
+                throw new Error('Enter the date you studied this question, today or earlier.');
             }
-        }, 0);
+            if (questionData.platformLink && !DSA.PracticePlan.safeLink(questionData.platformLink)) {
+                throw new Error('Use an HTTP or HTTPS reference link.');
+            }
 
-        // Re-enable button
-        submitBtn.disabled = false;
-        
-        const totalTime = (performance.now() - startTime).toFixed(2);
-        console.log(`⏱️ TOTAL SUBMIT TIME: ${totalTime}ms`);
-        submitBtn.textContent = originalText;
+            if (editId) {
+                const previous = DSA.Store.getQuestionById(editId);
+                if (!previous) throw new Error('This question is no longer available.');
+                if (questionData.status === 'Mastered') questionData.nextRevisionDate = null;
+                else if (previous.status === 'Mastered' || (!previous.lastRevisionDate && previous.dateSolved !== questionData.dateSolved)) {
+                    questionData.nextRevisionDate = DSA.RevisionEngine.calculateNextDate({ ...previous, ...questionData }, DSA.Store.getSettings());
+                }
+                DSA.Store.updateQuestion(editId, questionData);
+                showToast('Question updated.', 'success');
+            } else {
+                const question = DSA.Store.addQuestion(questionData);
+                try {
+                    const xp = recordQuestionStudy(question);
+                    showToast(`Question saved. +${xp} XP`, 'success');
+                } catch (error) {
+                    console.warn('Question saved, but study statistics could not be updated:', error);
+                    showToast('Question saved. Some study statistics could not be updated.', 'warning');
+                }
+            }
+            resetQuestionForm();
+            populateFilterOptions();
+            updateSidebarXP();
+            switchView('questions');
         } catch (error) {
             console.error('Error submitting question:', error);
-            showToast('Failed to save question. Check console for details.', 'error');
-            // Re-enable button on error
+            showToast(error.message || 'Failed to save question.', 'error');
+        } finally {
             submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
         }
     }
 
@@ -367,24 +450,24 @@ DSA.App = (() => {
             const statusClass = q.status.toLowerCase().replace(/\s+/g, '-');
 
             return `
-                <div class="question-item" data-id="${q.id}" onclick="DSA.App.openDetailModal('${q.id}')">
-                    <div class="q-difficulty-dot ${q.difficulty.toLowerCase()}"></div>
+                <div class="question-item" role="button" tabindex="0" data-id="${escapeHtml(q.id)}" onclick="DSA.App.openDetailModal(${inlineId(q.id)})">
+                    <div class="q-difficulty-dot ${escapeHtml(q.difficulty.toLowerCase())}"></div>
                     <div class="q-main">
                         <div class="q-name">${escapeHtml(q.name)}</div>
                         <div class="q-meta">
-                            <span>${q.subject}</span>
-                            <span>${q.platform}</span>
-                            <span>${q.dateSolved}</span>
-                            ${q.timeTaken ? `<span>${q.timeTaken}min</span>` : ''}
+                            <span>${escapeHtml(q.subject)}</span>
+                            <span>${escapeHtml(q.platform)}</span>
+                            <span>${escapeHtml(q.dateSolved || q.practiceDate)}</span>
+                            ${q.timeTaken ? `<span>${escapeHtml(q.timeTaken)}min</span>` : ''}
                         </div>
                     </div>
                     <div class="q-progress">
                         <div class="q-progress-bar">
                             <div class="q-progress-fill" style="width:${progressPct}%"></div>
                         </div>
-                        <div class="q-progress-text">${q.revisionCycle}/${totalCycles}</div>
+                        <div class="q-progress-text">${escapeHtml(q.revisionCycle)}/${totalCycles}</div>
                     </div>
-                    <span class="q-status-badge ${statusClass}">${q.status}</span>
+                    <span class="q-status-badge ${escapeHtml(statusClass)}">${escapeHtml(q.status)}</span>
                 </div>
             `;
         }).join('');
@@ -413,8 +496,8 @@ DSA.App = (() => {
 
         // Sort
         switch (sort) {
-            case 'newest': questions.sort((a, b) => b.dateSolved.localeCompare(a.dateSolved)); break;
-            case 'oldest': questions.sort((a, b) => a.dateSolved.localeCompare(b.dateSolved)); break;
+            case 'newest': questions.sort((a, b) => (b.dateSolved || '').localeCompare(a.dateSolved || '')); break;
+            case 'oldest': questions.sort((a, b) => (a.dateSolved || '').localeCompare(b.dateSolved || '')); break;
             case 'name': questions.sort((a, b) => a.name.localeCompare(b.name)); break;
             case 'difficulty': {
                 const order = { 'Hard': 0, 'Medium': 1, 'Easy': 2 };
@@ -428,6 +511,13 @@ DSA.App = (() => {
     }
 
     function setupFilters() {
+        document.getElementById('questions-list').addEventListener('keydown', event => {
+            const question = event.target.closest('.question-item');
+            if (question && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                openDetailModal(question.dataset.id);
+            }
+        });
         ['search-questions', 'filter-subject', 'filter-difficulty', 'filter-status', 'filter-platform', 'sort-questions'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener(id === 'search-questions' ? 'input' : 'change', refreshQuestionsList);
@@ -436,49 +526,26 @@ DSA.App = (() => {
 
     function populateFilterOptions() {
         const questions = DSA.Store.getQuestions();
-
-        // Subjects
-        const subjects = [...new Set(questions.map(q => q.subject))].sort();
+        const subjects = [...new Set(questions.map(q => q.subject).filter(Boolean))].sort();
+        const platforms = [...new Set(questions.map(q => q.platform).filter(Boolean))].sort();
         const subjectSelects = ['filter-subject', 'rev-filter-subject'];
-        subjectSelects.forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const val = el.value;
-            el.innerHTML = '<option value="">All Subjects</option>' +
-                subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-            el.value = val;
-        });
-
-        // Platforms / Sources
-        const platforms = [...new Set(questions.map(q => q.platform))].sort();
-        const platformSelect = document.getElementById('filter-platform');
-        if (platformSelect) {
-            const val = platformSelect.value;
-            platformSelect.innerHTML = '<option value="">All Sources</option>' +
-                platforms.map(p => `<option value="${p}">${p}</option>`).join('');
-            platformSelect.value = val;
-        }
-
-        // Subject suggestions datalist
-        populateSubjectSuggestions();
+        subjectSelects.forEach(id => replaceFilterOptions(id, 'All Subjects', subjects));
+        replaceFilterOptions('filter-platform', 'All Sources', platforms);
+        document.getElementById('subject-suggestions').replaceChildren(...subjects.map(subject => new Option(subject, subject)));
     }
 
-    function populateSubjectSuggestions() {
-        const questions = DSA.Store.getQuestions();
-        const subjects = [...new Set(questions.map(q => q.subject).filter(Boolean))].sort();
-        const datalist = document.getElementById('subject-suggestions');
-        if (datalist) {
-            datalist.innerHTML = subjects.map(s => `<option value="${s}">`).join('');
-        }
+    function replaceFilterOptions(id, defaultLabel, values) {
+        const select = document.getElementById(id);
+        const value = select.value;
+        select.replaceChildren(new Option(defaultLabel, ''), ...values.map(item => new Option(item, item)));
+        select.value = values.includes(value) ? value : '';
     }
 
     // ════════════ REVISIONS ════════════
     function setupRevisionTabs() {
         document.querySelectorAll('.rev-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                document.querySelectorAll('.rev-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentRevisionTab = tab.dataset.tab;
+                selectRevisionTab(tab.dataset.tab);
                 refreshRevisions();
             });
         });
@@ -486,14 +553,36 @@ DSA.App = (() => {
         document.getElementById('rev-filter-subject').addEventListener('change', refreshRevisions);
     }
 
+    function selectRevisionTab(name) {
+        currentRevisionTab = name;
+        document.querySelectorAll('.rev-tab').forEach(tab => {
+            const selected = tab.dataset.tab === name;
+            tab.classList.toggle('active', selected);
+            tab.setAttribute('aria-pressed', String(selected));
+        });
+    }
+
+    function openRevisionQueue() {
+        let tab = 'due';
+        if (!DSA.RevisionEngine.getDueExactlyToday().length) {
+            if (DSA.RevisionEngine.getOverdue().length) tab = 'overdue';
+            else if (DSA.PracticePlan.getQueue().length) tab = 'practice';
+        }
+        document.getElementById('rev-filter-subject').value = '';
+        selectRevisionTab(tab);
+        switchView('revisions');
+    }
+
     function refreshRevisions() {
-        const dueToday = DSA.RevisionEngine.getDueToday();
+        const dueToday = DSA.RevisionEngine.getDueExactlyToday();
         const overdue = DSA.RevisionEngine.getOverdue();
         const completedToday = DSA.RevisionEngine.getCompletedToday();
+        const practiceQueue = DSA.PracticePlan.getQueue();
 
         // Update badges
         document.getElementById('badge-due').textContent = dueToday.length;
         document.getElementById('badge-overdue').textContent = overdue.length;
+        document.getElementById('badge-practice').textContent = practiceQueue.length;
 
         let questions = [];
         switch (currentRevisionTab) {
@@ -501,6 +590,7 @@ DSA.App = (() => {
             case 'overdue': questions = overdue; break;
             case 'upcoming': questions = DSA.RevisionEngine.getUpcoming(14); break;
             case 'completed': questions = completedToday; break;
+            case 'practice': questions = practiceQueue; break;
         }
 
         // Subject filter
@@ -509,7 +599,17 @@ DSA.App = (() => {
             questions = questions.filter(q => q.subject === subjectFilter);
         }
 
-        renderRevisionList(questions);
+        if (currentRevisionTab === 'practice') {
+            DSA.PracticePlan.renderQueue(document.getElementById('revision-list'), questions);
+        } else renderRevisionList(questions);
+    }
+
+    function refreshPracticeData() {
+        populateFilterOptions();
+        renderCurrentStreak(DSA.Gamification.getCurrentStreak());
+        updateSidebarXP();
+        DSA.Notifications.updateNotificationDot();
+        if (currentView === 'revisions') refreshRevisions();
     }
 
     function renderRevisionList(questions) {
@@ -518,40 +618,44 @@ DSA.App = (() => {
         const today = DSA.Store.todayStr();
 
         if (questions.length === 0) {
-            const msg = currentRevisionTab === 'completed'
-                ? 'No revisions completed today yet.'
-                : currentRevisionTab === 'upcoming'
-                ? 'No upcoming revisions in the next 14 days.'
-                : 'No revisions to show. Great job! 🎉';
+            const emptyMessage = {
+                due: 'No reviews are due today.',
+                overdue: 'No reviews are overdue.',
+                upcoming: 'No reviews are scheduled for the next 14 days.',
+                completed: 'No saved questions were reviewed today.'
+            };
+            const msg = document.getElementById('rev-filter-subject').value
+                ? 'No reviews match this subject.'
+                : emptyMessage[currentRevisionTab];
             container.innerHTML = `<p class="empty-state">${msg}</p>`;
             return;
         }
 
         container.innerHTML = questions.map(q => {
-            const isOverdue = q.nextRevisionDate < today;
-            const isCompleted = q.lastRevisionDate === today && currentRevisionTab === 'completed';
+            const isCompleted = currentRevisionTab === 'completed';
+            const isOverdue = !isCompleted && q.nextRevisionDate < today;
             const totalCycles = settings.totalCycles || 15;
 
             return `
                 <div class="revision-item ${isOverdue ? 'overdue' : ''} ${isCompleted ? 'completed-item' : ''}">
                     <button class="rev-checkbox ${isCompleted ? 'checked' : ''}"
-                            onclick="DSA.App.openRevisionModal('${q.id}')"
+                            onclick="DSA.App.openRevisionModal(${inlineId(q.id)})"
                             ${isCompleted ? 'disabled' : ''}>
                         ${isCompleted ? '✓' : ''}
                     </button>
                     <div class="rev-main">
                         <div class="rev-name">${escapeHtml(q.name)}</div>
                         <div class="rev-meta">
-                            <span>${q.subject}</span>
-                            <span>${q.difficulty}</span>
-                            <span>${q.platform}</span>
-                            ${isOverdue ? `<span style="color:var(--danger)">Due: ${q.nextRevisionDate}</span>` : ''}
-                            ${currentRevisionTab === 'upcoming' ? `<span>Due: ${q.nextRevisionDate}</span>` : ''}
+                            <span>${escapeHtml(q.subject)}</span>
+                            <span>${escapeHtml(q.difficulty)}</span>
+                            <span>${escapeHtml(q.platform)}</span>
+                            ${isOverdue ? `<span style="color:var(--danger)">Due: ${escapeHtml(q.nextRevisionDate)}</span>` : ''}
+                            ${currentRevisionTab === 'upcoming' ? `<span>Due: ${escapeHtml(q.nextRevisionDate)}</span>` : ''}
                         </div>
                     </div>
-                    <span class="rev-cycle">Cycle ${q.revisionCycle}/${totalCycles}</span>
+                    <span class="rev-cycle">Cycle ${escapeHtml(q.revisionCycle)}/${totalCycles}</span>
                     ${!isCompleted ? `
-                        <button class="rev-action-btn" onclick="DSA.App.openRevisionModal('${q.id}')">
+                        <button class="rev-action-btn" onclick="DSA.App.openRevisionModal(${inlineId(q.id)})">
                             Revise
                         </button>
                     ` : `
@@ -587,21 +691,21 @@ DSA.App = (() => {
 
         // Go Back from edit mode
         document.getElementById('form-back-btn').addEventListener('click', () => {
-            document.getElementById('edit-question-id').value = '';
-            document.getElementById('question-form').reset();
-            document.getElementById('form-submit-btn').textContent = 'Save Topic';
-            document.getElementById('form-back-btn').style.display = 'none';
+            resetQuestionForm();
             switchView('questions');
         });
 
         // Close on overlay click
-        ['revision-modal', 'detail-modal'].forEach(id => {
-            document.getElementById(id).addEventListener('click', (e) => {
-                if (e.target === document.getElementById(id)) {
-                    document.getElementById(id).classList.remove('show');
-                }
+        for (const [id, close] of [['revision-modal', closeRevisionModal], ['detail-modal', closeDetailModal]]) {
+            const dialog = document.getElementById(id);
+            dialog.addEventListener('click', event => {
+                if (event.target === dialog) close();
             });
-        });
+            dialog.addEventListener('cancel', event => {
+                event.preventDefault();
+                close();
+            });
+        }
     }
 
     function openRevisionModal(questionId) {
@@ -622,11 +726,11 @@ DSA.App = (() => {
         document.getElementById('modal-time').value = '10';
         document.getElementById('modal-notes').value = '';
 
-        document.getElementById('revision-modal').classList.add('show');
+        document.getElementById('revision-modal').showModal();
     }
 
     function closeRevisionModal() {
-        document.getElementById('revision-modal').classList.remove('show');
+        document.getElementById('revision-modal').close();
         currentRevisionQuestionId = null;
     }
 
@@ -636,22 +740,35 @@ DSA.App = (() => {
         const quality = parseInt(document.getElementById('modal-quality').value);
         const timeTaken = parseInt(document.getElementById('modal-time').value) || 0;
         const notes = document.getElementById('modal-notes').value.trim();
+        if (!document.getElementById('modal-time').reportValidity()) return;
+        try {
+            if (!completeQuestionRevision(currentRevisionQuestionId, quality, timeTaken, notes)) {
+                showToast('This question is no longer available for review.', 'warning');
+            }
+            closeRevisionModal();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
 
-        const result = DSA.RevisionEngine.completeRevision(currentRevisionQuestionId, quality, timeTaken, notes);
+    function completeQuestionRevision(questionId, quality, timeTaken, notes) {
+        const result = DSA.RevisionEngine.completeRevision(questionId, quality, timeTaken, notes);
         if (!result) return;
 
-        // Award XP
-        DSA.Gamification.awardXP(result.xpEarned, 'Revision completed');
-        DSA.Gamification.updateStreak();
-        DSA.Gamification.checkBadges();
-
-        closeRevisionModal();
-
-        if (result.mastered) {
-            showToast(`🌟 "${result.question.name}" MASTERED! +${result.xpEarned} XP`, 'success');
-            DSA.Gamification.triggerConfetti();
-        } else {
-            showToast(`✅ Revision done! Cycle ${result.newCycle}/${result.totalCycles}. +${result.xpEarned} XP`, 'success');
+        try {
+            DSA.Gamification.awardXP(result.xpEarned, 'Revision completed');
+            renderCurrentStreak(DSA.Gamification.updateStreak());
+            DSA.Gamification.checkBadges();
+            if (result.mastered) {
+                showToast(`Mastered "${result.question.name}". +${result.xpEarned} XP`, 'success');
+                DSA.Gamification.triggerConfetti();
+            } else {
+                showToast(`Review complete. Cycle ${result.newCycle}/${result.totalCycles}. +${result.xpEarned} XP`, 'success');
+            }
+        } catch (error) {
+            console.error('Could not update review rewards:', error);
+            renderCurrentStreak(DSA.Gamification.getCurrentStreak());
+            showToast('Review saved. Some rewards could not update.', 'warning');
         }
 
         updateSidebarXP();
@@ -660,12 +777,16 @@ DSA.App = (() => {
         if (currentView === 'dashboard') refreshDashboard();
         if (currentView === 'revisions') refreshRevisions();
         if (currentView === 'questions') refreshQuestionsList();
+        DSA.Notifications.updateNotificationDot();
+        return result;
     }
 
     // ════════════ DETAIL MODAL ════════════
     function openDetailModal(questionId) {
         const q = DSA.Store.getQuestionById(questionId);
         if (!q) return;
+        document.getElementById('detail-edit-btn').hidden = q.status === 'Not Started';
+        document.getElementById('detail-reset-rev-btn').hidden = q.status === 'Not Started';
 
         currentRevisionQuestionId = questionId;
         const settings = DSA.Store.getSettings();
@@ -700,7 +821,9 @@ DSA.App = (() => {
         const qualityEmojis = { 1: '😫', 2: '😓', 3: '🤔', 4: '😊', 5: '🤩' };
 
         // Calculate days since solved
-        const daysSinceSolved = Math.floor((new Date() - new Date(q.dateSolved)) / (1000 * 60 * 60 * 24));
+        const sourceLink = DSA.PracticePlan.safeLink(q.platformLink);
+        const confidence = Math.min(5, Math.max(0, Number(q.initialConfidence || q.confidence) || 0));
+        const daysSinceSolved = (new Date(DSA.Store.todayStr()) - new Date(q.dateSolved)) / 86400000;
         const daysSinceText = daysSinceSolved === 0 ? 'Today' : daysSinceSolved === 1 ? '1 day ago' : `${daysSinceSolved} days ago`;
 
         document.getElementById('detail-title').textContent = q.name;
@@ -711,54 +834,54 @@ DSA.App = (() => {
                 ${q.stream ? `
                 <div class="detail-field">
                     <div class="detail-label">🎓 Stream</div>
-                    <div class="detail-value">${q.stream}</div>
+                    <div class="detail-value">${escapeHtml(q.stream)}</div>
                 </div>
                 ` : ''}
                 <div class="detail-field">
                     <div class="detail-label">📂 Subject</div>
-                    <div class="detail-value">${q.subject}</div>
+                    <div class="detail-value">${escapeHtml(q.subject)}</div>
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">⚡ Difficulty</div>
                     <div class="detail-value">
                         <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:0.82rem;font-weight:700;background:${diffBg};color:${diffColor};border:1px solid ${diffColor}22;">
-                            ${q.difficulty}
+                            ${escapeHtml(q.difficulty)}
                         </span>
                     </div>
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">🌐 Source</div>
-                    <div class="detail-value">${platformIcon} ${q.platform}</div>
+                    <div class="detail-value">${platformIcon} ${escapeHtml(q.platform)}</div>
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">📅 Date Studied</div>
-                    <div class="detail-value">${q.dateSolved} <span style="font-size:0.75rem;color:var(--text-muted);margin-left:6px;">(${daysSinceText})</span></div>
+                    <div class="detail-value">${q.dateSolved ? `${escapeHtml(q.dateSolved)} <small>(${daysSinceText})</small>` : 'Not studied yet'}</div>
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">⏱️ Time Taken</div>
-                    <div class="detail-value">${q.timeTaken ? `<span style="font-variant-numeric:tabular-nums;">${q.timeTaken}</span> min` : '<span style="color:var(--text-muted);">—</span>'}</div>
+                    <div class="detail-value">${q.timeTaken ? `<span style="font-variant-numeric:tabular-nums;">${escapeHtml(q.timeTaken)}</span> min` : '<span style="color:var(--text-muted);">—</span>'}</div>
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">📋 Status</div>
                     <div class="detail-value">
                         <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:0.82rem;font-weight:700;background:${statusBg};color:${statusColor};border:1px solid ${statusColor}22;">
-                            ${q.status}
+                            ${escapeHtml(q.status)}
                         </span>
                     </div>
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">🧮 Ease Factor</div>
-                    <div class="detail-value">${(q.easeFactor || 2.5).toFixed(2)}</div>
+                    <div class="detail-value">${(Number(q.easeFactor) || 2.5).toFixed(2)}</div>
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">🔄 Next Revision</div>
-                    <div class="detail-value">${q.nextRevisionDate || '<span style="color:var(--text-muted);">—</span>'}</div>
+                    <div class="detail-value">${escapeHtml(q.nextRevisionDate) || '<span style="color:var(--text-muted);">—</span>'}</div>
                 </div>
                 <div class="detail-field detail-full">
                     <div class="detail-label">📊 Revision Progress</div>
                     <div class="detail-value">
                         <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-                            <span style="font-size:1.1rem;font-weight:800;">${q.revisionCycle}<span style="color:var(--text-muted);font-weight:500;font-size:0.85rem;">/${totalCycles}</span></span>
+                            <span style="font-size:1.1rem;font-weight:800;">${escapeHtml(q.revisionCycle)}<span style="color:var(--text-muted);font-weight:500;font-size:0.85rem;">/${totalCycles}</span></span>
                             <span style="font-size:0.82rem;color:var(--text-muted);">(${progressPct}% complete)</span>
                         </div>
                         <div class="q-progress-bar" style="height:8px;border-radius:6px;">
@@ -768,16 +891,16 @@ DSA.App = (() => {
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">✨ XP Earned</div>
-                    <div class="detail-value"><span style="color:var(--accent);font-weight:800;font-size:1.05rem;">${q.xpEarned || 0}</span> <span style="color:var(--text-muted);font-size:0.8rem;">XP</span></div>
+                    <div class="detail-value"><span style="color:var(--accent);font-weight:800;font-size:1.05rem;">${escapeHtml(q.xpEarned || 0)}</span> <span style="color:var(--text-muted);font-size:0.8rem;">XP</span></div>
                 </div>
                 <div class="detail-field">
                     <div class="detail-label">🔢 Confidence</div>
-                    <div class="detail-value">${'⭐'.repeat(Math.min(q.confidence || 0, 5))}${'☆'.repeat(5 - Math.min(q.confidence || 0, 5))}</div>
+                    <div class="detail-value">${'⭐'.repeat(Math.floor(confidence))}${'☆'.repeat(5 - Math.floor(confidence))}</div>
                 </div>
-                ${q.platformLink ? `
+                ${sourceLink ? `
                 <div class="detail-field detail-full">
                     <div class="detail-label">🔗 Reference Link</div>
-                    <div class="detail-value"><a href="${escapeHtml(q.platformLink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(q.platformLink)}</a></div>
+                    <div class="detail-value"><a href="${escapeHtml(sourceLink)}" target="_blank" rel="noopener noreferrer">${escapeHtml(sourceLink)}</a></div>
                 </div>
                 ` : ''}
                 ${q.tags && q.tags.length ? `
@@ -829,8 +952,8 @@ DSA.App = (() => {
                 <div class="revision-history-list">
                     ${q.revisionHistory.map((r, i) => `
                         <div class="rev-history-item">
-                            <span>${qualityEmojis[r.quality] || '📝'} Cycle ${r.cycle} — ${r.date}</span>
-                            <span>${'⭐'.repeat(Math.min(r.quality || 0, 5))} ${r.timeTaken ? '• ' + r.timeTaken + 'min' : ''}</span>
+                            <span>${qualityEmojis[r.quality] || '📝'} Cycle ${escapeHtml(r.cycle)} — ${escapeHtml(r.date)}</span>
+                            <span>${'⭐'.repeat(Math.max(0, Math.min(r.quality || 0, 5)))} ${r.timeTaken ? '• ' + escapeHtml(r.timeTaken) + 'min' : ''}</span>
                         </div>
                     `).join('')}
                 </div>
@@ -838,11 +961,11 @@ DSA.App = (() => {
             ` : '<div class="detail-no-history"><span style="display:block;text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;">📋 No revision history yet. Complete your first revision to start tracking!</span></div>'}
         `;
 
-        document.getElementById('detail-modal').classList.add('show');
+        document.getElementById('detail-modal').showModal();
     }
 
     function closeDetailModal() {
-        document.getElementById('detail-modal').classList.remove('show');
+        document.getElementById('detail-modal').close();
         currentRevisionQuestionId = null;
     }
 
@@ -867,16 +990,25 @@ DSA.App = (() => {
         document.getElementById('q-code').value = q.code || '';
         document.getElementById('q-important-note').value = q.importantNote || '';
         document.getElementById('q-status').value = q.status;
+        setConfidence(q.initialConfidence || 4);
         document.getElementById('form-submit-btn').textContent = 'Update Topic';
         document.getElementById('form-back-btn').style.display = '';
     }
 
     function handleDetailReset() {
         if (!currentRevisionQuestionId) return;
-        if (!confirm('Reset all revision progress for this topic? This cannot be undone.')) return;
+        if (!confirm('Reset this topic’s revision cycle? Your review history stays saved.')) return;
 
-        DSA.RevisionEngine.resetRevisionCycle(currentRevisionQuestionId);
-        showToast('Revision cycle reset!', 'info');
+        try {
+            if (DSA.RevisionEngine.resetRevisionCycle(currentRevisionQuestionId)) {
+                showToast('Revision cycle reset.', 'info');
+            } else {
+                showToast('This topic is no longer available for reset.', 'warning');
+            }
+        } catch (error) {
+            showToast(error.message, 'error');
+            return;
+        }
         closeDetailModal();
         if (currentView === 'questions') refreshQuestionsList();
         if (currentView === 'revisions') refreshRevisions();
@@ -886,8 +1018,13 @@ DSA.App = (() => {
         if (!currentRevisionQuestionId) return;
         if (!confirm('Delete this topic permanently? This cannot be undone.')) return;
 
-        DSA.Store.deleteQuestion(currentRevisionQuestionId);
-        showToast('Topic deleted.', 'info');
+        try {
+            const deleted = DSA.Store.deleteQuestion(currentRevisionQuestionId);
+            showToast(deleted ? 'Topic deleted.' : 'This topic has already been removed.', 'info');
+        } catch (error) {
+            showToast(error.message, 'error');
+            return;
+        }
         closeDetailModal();
         populateFilterOptions();
         if (currentView === 'questions') refreshQuestionsList();
@@ -896,6 +1033,58 @@ DSA.App = (() => {
         if (currentView === 'analytics') refreshAnalytics();
         if (currentView === 'growth') refreshGrowth();
         if (currentView === 'profile') refreshProfile();
+    }
+
+    // ════════════ STUDY PLANNER ════════════
+    function refreshPlanner() {
+        DSA.ModernFeatures.updateGoalTracker();
+        DSA.ModernFeatures.renderCalendar();
+        refreshPlannerSchedule();
+    }
+
+    function refreshPlannerSchedule() {
+        const container = document.getElementById('upcoming-schedule');
+        const today = DSA.Store.todayStr();
+        const end = DSA.Store.addDays(today, 13);
+        const days = new Map();
+
+        function scheduledDay(date) {
+            if (!days.has(date)) days.set(date, { practice: 0, reviews: 0, entry: false });
+            return days.get(date);
+        }
+
+        for (const question of DSA.Store.getQuestions()) {
+            if (question.status === 'Mastered') continue;
+            const pending = question.status === 'Not Started';
+            const date = pending ? question.practiceDate : question.nextRevisionDate;
+            if (date && date >= today && date <= end) scheduledDay(date)[pending ? 'practice' : 'reviews']++;
+        }
+        for (const date of Object.keys(DSA.Store.getCalendarEntries())) {
+            if (date >= today && date <= end) scheduledDay(date).entry = true;
+        }
+
+        const entries = Array.from(days).sort(([a], [b]) => a.localeCompare(b));
+        container.replaceChildren(...entries.map(([date, { practice, reviews, entry }]) => {
+            const row = document.createElement('li');
+            row.className = 'schedule-item';
+            const label = document.createElement('time');
+            label.dateTime = date;
+            label.textContent = date === today ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+            const detail = document.createElement('span');
+            const labels = [];
+            if (practice) labels.push(practice === 1 ? '1 practice question' : practice + ' practice questions');
+            if (reviews) labels.push(reviews === 1 ? '1 review' : reviews + ' reviews');
+            if (entry) labels.push('Calendar entry');
+            detail.textContent = labels.join(' · ');
+            row.append(label, detail);
+            return row;
+        }));
+        if (!entries.length) {
+            const empty = document.createElement('li');
+            empty.className = 'empty-state';
+            empty.textContent = 'Nothing scheduled in the next 14 days.';
+            container.append(empty);
+        }
     }
 
     // ════════════ ANALYTICS ════════════
@@ -917,7 +1106,7 @@ DSA.App = (() => {
         const subjects = DSA.RevisionEngine.getWeakSubjects();
 
         if (subjects.length === 0) {
-            container.innerHTML = '<p class="empty-state">Not enough data yet.</p>';
+            container.innerHTML = '<p class="empty-state">Review a question to see recall by subject.</p>';
             return;
         }
 
@@ -925,8 +1114,8 @@ DSA.App = (() => {
             const scoreClass = s.strengthScore < 40 ? 'low' : s.strengthScore < 70 ? 'mid' : 'high';
             return `
                 <div class="growth-item">
-                    <span class="growth-item-name">${s.name} (${s.total} Qs)</span>
-                    <span class="growth-item-score ${scoreClass}">${s.strengthScore}%</span>
+                    <span class="growth-item-name">${escapeHtml(s.name)} (${s.total} Qs)</span>
+                    <span class="growth-item-score ${scoreClass}">${s.avgQuality.toFixed(1)}/5 recall</span>
                 </div>
             `;
         }).join('');
@@ -956,26 +1145,29 @@ DSA.App = (() => {
         const container = document.getElementById('improvement-tracker');
         const questions = DSA.Store.getQuestions();
         const stats = DSA.Store.getUserStats();
-        const dailyLog = DSA.Store.getDailyLog();
+        const activity = DSA.RevisionEngine.getStudyActivity();
 
-        if (questions.length === 0) {
+        if (questions.length === 0 && activity.size === 0) {
             container.innerHTML = '<p class="empty-state">Start revising to see trends.</p>';
             return;
         }
 
         // Calculate metrics
-        const totalRevisions = stats.totalRevisions || 0;
+        const loggedReviews = [...activity.values()].reduce((total, day) => total + day.reviewed, 0);
+        const totalRevisions = Math.max(Number(stats.totalRevisions) || 0, loggedReviews);
         const mastered = questions.filter(q => q.status === 'Mastered').length;
-        const avgEF = questions.reduce((s, q) => s + (q.easeFactor || 2.5), 0) / questions.length;
+        const reviewed = questions.filter(q => q.lastRevisionDate || q.revisionHistory?.length);
+        const avgEF = reviewed.length
+            ? (reviewed.reduce((sum, q) => sum + (Number(q.easeFactor) || 2.5), 0) / reviewed.length).toFixed(2)
+            : '—';
 
         // Weekly average
         const last7 = [];
         for (let i = 0; i < 7; i++) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const ds = d.toISOString().split('T')[0];
-            const log = dailyLog[ds];
-            last7.push(log ? log.revised : 0);
+            const ds = DSA.Store.dateKey(d);
+            last7.push(activity.get(ds)?.reviewed || 0);
         }
         const weeklyAvg = Math.round(last7.reduce((a, b) => a + b, 0) / 7 * 10) / 10;
 
@@ -989,12 +1181,12 @@ DSA.App = (() => {
                 <span class="growth-metric-lbl">Questions Mastered</span>
             </div>
             <div class="growth-metric">
-                <span class="growth-metric-val">${avgEF.toFixed(2)}</span>
+                <span class="growth-metric-val">${avgEF}</span>
                 <span class="growth-metric-lbl">Avg Ease Factor</span>
             </div>
             <div class="growth-metric">
                 <span class="growth-metric-val">${weeklyAvg}</span>
-                <span class="growth-metric-lbl">Daily Avg (7d)</span>
+                <span class="growth-metric-lbl">Reviews per day (7d)</span>
             </div>
         `;
     }
@@ -1014,7 +1206,7 @@ DSA.App = (() => {
         if (weakSubjects.length > 0) {
             recs.push({
                 icon: '🎯',
-                text: `Focus on <strong>${weakSubjects[0].name}</strong> — it's your weakest subject at ${weakSubjects[0].strengthScore}% strength.`
+                text: `Review <strong>${escapeHtml(weakSubjects[0].name)}</strong> again. Your average recall was ${weakSubjects[0].avgQuality.toFixed(1)}/5.`
             });
         }
 
@@ -1039,13 +1231,13 @@ DSA.App = (() => {
         }
 
         // Streak
-        const stats = DSA.Store.getUserStats();
-        if (stats.currentStreak > 5) {
+        const streak = DSA.Gamification.getCurrentStreak();
+        if (streak > 5) {
             recs.push({
                 icon: '🔥',
-                text: `Amazing <strong>${stats.currentStreak}-day streak</strong>! Keep the momentum going — consistency beats intensity.`
+                text: `You have a <strong>${streak}-day study streak</strong>.`
             });
-        } else if (stats.currentStreak === 0) {
+        } else if (streak === 0) {
             recs.push({
                 icon: '🚀',
                 text: `Start a new streak today! Even <strong>one revision</strong> counts toward building your habit.`
@@ -1100,8 +1292,9 @@ DSA.App = (() => {
         document.getElementById('p-total-questions').textContent = questions.length;
         document.getElementById('p-total-revisions').textContent = stats.totalRevisions || 0;
         document.getElementById('p-mastered').textContent = mastered;
-        document.getElementById('p-current-streak').textContent = stats.currentStreak || 0;
-        document.getElementById('p-longest-streak').textContent = stats.longestStreak || 0;
+        const streak = DSA.Gamification.getCurrentStreak();
+        document.getElementById('p-current-streak').textContent = streak;
+        document.getElementById('p-longest-streak').textContent = Math.max(Number(stats.longestStreak) || 0, streak);
         document.getElementById('p-total-xp').textContent = stats.totalXP || 0;
 
         // Streak Week
@@ -1156,52 +1349,69 @@ DSA.App = (() => {
             document.getElementById(id).addEventListener('change', saveSettingsFromUI);
         });
 
-        document.getElementById('set-notifications').addEventListener('change', (e) => {
+        document.getElementById('set-notifications').addEventListener('change', async (e) => {
             const settings = DSA.Store.getSettings();
-            settings.notificationsEnabled = e.target.checked;
-            DSA.Store.saveSettings(settings);
-            if (e.target.checked) {
-                DSA.Notifications.requestPermission().then(p => {
-                    if (p !== 'granted') {
-                        showToast('Notification permission denied. Enable in browser settings.', 'warning');
-                        e.target.checked = false;
-                        settings.notificationsEnabled = false;
-                        DSA.Store.saveSettings(settings);
-                    }
-                });
+            const toggle = e.currentTarget;
+            settings.notificationsEnabled = toggle.checked;
+            if (!applySettings(settings) || !toggle.checked) return;
+
+            const permission = await DSA.Notifications.requestPermission();
+            const currentSettings = DSA.Store.getSettings();
+            if (permission !== 'granted' && currentSettings.notificationsEnabled) {
+                currentSettings.notificationsEnabled = false;
+                if (applySettings(currentSettings)) {
+                    loadSettings();
+                    showToast('Browser notifications are blocked. Check your browser permissions.', 'warning');
+                }
             }
         });
 
         document.getElementById('set-overdue-alerts').addEventListener('change', (e) => {
             const settings = DSA.Store.getSettings();
             settings.overdueAlerts = e.target.checked;
-            DSA.Store.saveSettings(settings);
+            applySettings(settings);
         });
 
         // Reset data
         document.getElementById('settings-reset-btn').addEventListener('click', () => {
-            if (!confirm('⚠️ This will delete ALL your data permanently. Are you absolutely sure?')) return;
-            if (!confirm('This is your last chance. ALL topics, stats, and progress will be lost. Continue?')) return;
-            const resetPromise = DSA.Store.resetAllData();
-            showToast('All data has been reset.', 'info');
-            if (resetPromise && typeof resetPromise.then === 'function') {
-                resetPromise
-                    .then(() => location.reload())
-                    .catch(() => location.reload());
-            } else {
-                location.reload();
+            if (!confirm('Delete all study data saved in this browser? This cannot be undone.')) return;
+            try {
+                DSA.Store.resetAllData();
+            } catch (error) {
+                showToast(error.message, 'error');
+                return;
             }
+            location.reload();
         });
     }
 
-    function loadSettings() {
+    function applySettings(settings) {
+        try {
+            DSA.Store.saveSettings(settings);
+            return true;
+        } catch (error) {
+            loadSettings();
+            showToast(error.message, 'error');
+            return false;
+        }
+    }
+
+    function loadSettings(preserveFocusedInput = false) {
         const settings = DSA.Store.getSettings();
-        document.getElementById('set-total-cycles').value = settings.totalCycles || 15;
-        document.getElementById('set-daily-goal').value = settings.dailyGoal || 5;
-        document.getElementById('set-intervals').value = (settings.baseIntervals || []).join(',');
-        document.getElementById('set-notifications').checked = settings.notificationsEnabled;
-        document.getElementById('set-overdue-alerts').checked = settings.overdueAlerts !== false;
-        document.getElementById('set-auto-delete').value = settings.autoDeleteAfterDays || 0;
+        const fields = {
+            'set-total-cycles': settings.totalCycles,
+            'set-daily-goal': settings.dailyGoal,
+            'set-intervals': settings.baseIntervals.join(','),
+            'set-notifications': settings.notificationsEnabled,
+            'set-overdue-alerts': settings.overdueAlerts,
+            'set-auto-delete': settings.autoDeleteAfterDays
+        };
+        for (const [id, value] of Object.entries(fields)) {
+            const field = document.getElementById(id);
+            if (preserveFocusedInput && field === document.activeElement) continue;
+            if (field.type === 'checkbox') field.checked = value;
+            else field.value = value;
+        }
     }
 
     function saveSettingsFromUI() {
@@ -1217,9 +1427,10 @@ DSA.App = (() => {
         const intervals = intervalsStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
         settings.baseIntervals = intervals.length > 0 ? intervals : existingSettings.baseIntervals;
 
-        DSA.Store.saveSettings(settings);
-        loadSettings();
-        showToast('Settings saved!', 'success');
+        if (applySettings(settings)) {
+            loadSettings();
+            showToast('Settings saved.', 'success');
+        }
     }
 
     // ════════════ EXPORT / IMPORT ════════════
@@ -1233,50 +1444,58 @@ DSA.App = (() => {
             a.href = url;
             a.download = `study-tracker-backup-${DSA.Store.todayStr()}.json`;
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
             showToast('Data exported successfully!', 'success');
         };
 
         document.getElementById('export-btn').addEventListener('click', exportHandler);
         document.getElementById('settings-export-btn').addEventListener('click', exportHandler);
 
-        // Import handlers
-        const importHandler = (fileInput) => {
-            fileInput.click();
-            fileInput.onchange = () => {
+        const bindImport = (buttonId, inputId) => {
+            const fileInput = document.getElementById(inputId);
+            document.getElementById(buttonId).addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', async () => {
                 const file = fileInput.files[0];
                 if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const success = DSA.Store.importData(e.target.result);
-                    if (success) {
-                        showToast('Data imported successfully!', 'success');
-                        populateFilterOptions();
-                        switchView(currentView);
-                        updateSidebarXP();
-                    } else {
-                        showToast('Import failed. Check file format.', 'error');
-                    }
+                let contents;
+                try {
+                    contents = await file.text();
+                } catch (error) {
+                    console.error('Backup import failed:', error);
+                    showToast('Could not import this backup. Check that the file is readable.', 'error');
+                    return;
+                } finally {
                     fileInput.value = '';
-                };
-                reader.readAsText(file);
-            };
+                }
+                if (!DSA.Store.importData(contents)) {
+                    showToast('Could not restore this backup. Check the file and available browser storage.', 'error');
+                    return;
+                }
+                populateFilterOptions();
+                switchView(currentView);
+                updateSidebarXP();
+                DSA.ModernFeatures.renderCalendar();
+                showToast('Backup restored.', 'success');
+            });
         };
 
-        document.getElementById('import-btn').addEventListener('click', () => importHandler(document.getElementById('import-file')));
-        document.getElementById('settings-import-btn').addEventListener('click', () => importHandler(document.getElementById('settings-import-file')));
+        bindImport('import-btn', 'import-file');
+        bindImport('settings-import-btn', 'settings-import-file');
     }
 
     // ════════════ THEME SYSTEM ════════════
     function loadTheme() {
-        const saved = localStorage.getItem('dsa_theme') || 'dark';
+        let saved;
+        try { saved = localStorage.getItem('dsa_theme'); } catch { /* Theme works without storage. */ }
         applyTheme(saved);
     }
 
     function applyTheme(theme) {
+        theme = theme === 'dark' ? 'dark' : 'obsidian';
         document.body.classList.add('theme-transition');
         document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('dsa_theme', theme);
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#151524' : '#f6f7fb';
+        try { localStorage.setItem('dsa_theme', theme); } catch { /* Theme still applies to this page. */ }
 
         // Update toggle button
         const icon = document.getElementById('theme-icon');
@@ -1286,23 +1505,16 @@ DSA.App = (() => {
                 icon.textContent = '🌙';
                 label.textContent = 'Dark';
             } else {
-                icon.textContent = '◆';
-                label.textContent = 'Obsidian';
+                icon.textContent = '☀';
+                label.textContent = 'Light';
             }
         }
 
         // Update settings theme selector
         document.querySelectorAll('#theme-selector .theme-option').forEach(opt => {
             opt.classList.toggle('active', opt.dataset.theme === theme);
+            opt.setAttribute('aria-pressed', String(opt.dataset.theme === theme));
         });
-
-        // Update Chart.js colors if charts are visible
-        if (window.Chart) {
-            const textColor = theme === 'obsidian' ? '#4a4a52' : '#9398b0';
-            const gridColor = theme === 'obsidian' ? '#e0e0e8' : '#2a2d45';
-            Chart.defaults.color = textColor;
-            Chart.defaults.borderColor = gridColor;
-        }
 
         setTimeout(() => document.body.classList.remove('theme-transition'), 500);
     }
@@ -1310,10 +1522,9 @@ DSA.App = (() => {
     function setupThemeToggle() {
         // Top bar toggle (cycles between themes)
         document.getElementById('theme-toggle-btn').addEventListener('click', () => {
-            const current = localStorage.getItem('dsa_theme') || 'dark';
+            const current = document.documentElement.dataset.theme;
             const next = current === 'dark' ? 'obsidian' : 'dark';
             applyTheme(next);
-            showToast(`Switched to ${next === 'dark' ? 'Dark' : 'Obsidian'} theme`, 'info');
 
             // Re-render charts if on analytics
             if (currentView === 'analytics') refreshAnalytics();
@@ -1337,29 +1548,24 @@ DSA.App = (() => {
     function setupMiscUI() {
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            if (document.querySelector('dialog[open]')) return;
+            if (e.key === 'Escape' && document.getElementById('sidebar').classList.contains('open')) {
+                closeSidebar();
+                document.getElementById('menu-toggle').focus();
+            }
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+            if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey) return;
             if (e.key === 'n' || e.key === 'N') switchView('add-question');
             if (e.key === 'd' || e.key === 'D') switchView('dashboard');
             if (e.key === 'r' || e.key === 'R') switchView('revisions');
-            if (e.key === 'Escape') {
-                document.getElementById('revision-modal').classList.remove('show');
-                document.getElementById('detail-modal').classList.remove('show');
-            }
         });
-    }
-
-    function updateGreeting() {
-        const hour = new Date().getHours();
-        let greeting = 'Good Evening';
-        if (hour < 12) greeting = 'Good Morning';
-        else if (hour < 17) greeting = 'Good Afternoon';
-        document.getElementById('greeting').textContent = `${greeting}, Learner!`;
     }
 
     function updateDateDisplay() {
         const now = new Date();
-        document.getElementById('date-display').textContent =
-            now.toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        const date = document.getElementById('date-display');
+        date.dateTime = DSA.Store.dateKey(now);
+        date.textContent = now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     }
 
     // ════════════ TOAST SYSTEM ════════════
@@ -1368,13 +1574,13 @@ DSA.App = (() => {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
 
-        const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+        const icons = { success: '✓', error: '!', info: 'i', warning: '!' };
         toast.innerHTML = `
-            <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-            <span class="toast-text">${message}</span>
+            <span class="toast-icon" aria-hidden="true">${icons[type] || 'i'}</span>
+            <span class="toast-text">${escapeHtml(message)}</span>
         `;
 
-        container.appendChild(toast);
+        container.replaceChildren(toast);
 
         setTimeout(() => {
             toast.classList.add('toast-out');
@@ -1388,10 +1594,12 @@ DSA.App = (() => {
 
     // ════════════ UTILITIES ════════════
     function escapeHtml(str) {
-        if (!str) return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+        const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return String(str ?? '').replace(/[&<>"']/g, char => entities[char]);
+    }
+
+    function inlineId(value) {
+        return escapeHtml(JSON.stringify(String(value)));
     }
 
     function getTimeDiff(timestamp) {
@@ -1443,11 +1651,14 @@ DSA.App = (() => {
             notes: document.getElementById('syl-notes').value.trim()
         };
 
-        DSA.Store.addSyllabus(syllabusData);
-        showToast(`Syllabus "${syllabusData.name}" added with ${topics.length} topics!`, 'success');
-
-        e.target.reset();
-        refreshSyllabus();
+        if (!syllabusData.name || !syllabusData.stream) {
+            showToast('Enter a syllabus name and select a stream.', 'warning');
+            return;
+        }
+        if (saveSyllabusChange(
+            () => DSA.Store.addSyllabus(syllabusData),
+            `Added "${syllabusData.name}" with ${topics.length} topics.`
+        )) e.target.reset();
     }
 
     function refreshSyllabus() {
@@ -1459,13 +1670,7 @@ DSA.App = (() => {
     function populateSyllabusFilters() {
         const syllabi = DSA.Store.getSyllabi();
         const streams = [...new Set(syllabi.map(s => s.stream))].sort();
-        const filterEl = document.getElementById('syl-filter-stream');
-        if (filterEl) {
-            const val = filterEl.value;
-            filterEl.innerHTML = '<option value="">All Streams</option>' +
-                streams.map(s => `<option value="${s}">${s}</option>`).join('');
-            filterEl.value = val;
-        }
+        replaceFilterOptions('syl-filter-stream', 'All Streams', streams);
     }
 
     function renderSyllabusList() {
@@ -1483,25 +1688,29 @@ DSA.App = (() => {
             return;
         }
 
+        const today = Date.parse(DSA.Store.todayStr());
         container.innerHTML = syllabi.map(syl => {
             const completed = syl.topics.filter(t => t.completed).length;
             const total = syl.topics.length;
             const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-            const daysToExam = syl.examDate ? Math.ceil((new Date(syl.examDate) - new Date()) / (1000*60*60*24)) : null;
+            const daysToExam = (Date.parse(syl.examDate) - today) / 86400000;
+            const examLabel = daysToExam > 0
+                ? `Exam in ${daysToExam} ${daysToExam === 1 ? 'day' : 'days'}`
+                : daysToExam === 0 ? 'Exam today' : 'Exam passed';
 
             return `
-                <div class="syllabus-card" data-id="${syl.id}">
+                <div class="syllabus-card" data-id="${escapeHtml(syl.id)}">
                     <div class="syllabus-card-header">
                         <div class="syllabus-card-info">
                             <h3 class="syllabus-card-title">${escapeHtml(syl.name)}</h3>
                             <div class="syllabus-card-meta">
                                 <span class="syllabus-stream-badge">${escapeHtml(syl.stream)}</span>
                                 ${syl.semester ? `<span>📅 ${escapeHtml(syl.semester)}</span>` : ''}
-                                ${daysToExam !== null ? `<span class="${daysToExam <= 7 ? 'exam-urgent' : daysToExam <= 30 ? 'exam-soon' : ''}">🎯 Exam in ${daysToExam > 0 ? daysToExam + ' days' : daysToExam === 0 ? 'Today!' : 'Passed'}</span>` : ''}
+                                ${Number.isFinite(daysToExam) ? `<span class="${daysToExam >= 0 && daysToExam <= 7 ? 'exam-urgent' : daysToExam > 7 && daysToExam <= 30 ? 'exam-soon' : ''}">${examLabel}</span>` : ''}
                             </div>
                         </div>
                         <div class="syllabus-card-actions">
-                            <button class="btn btn-sm btn-danger" onclick="DSA.App.deleteSyllabus('${syl.id}')" title="Delete">🗑️</button>
+                            <button class="btn btn-sm btn-danger" onclick="DSA.App.deleteSyllabus(${inlineId(syl.id)})" title="Delete">🗑️</button>
                         </div>
                     </div>
                     <div class="syllabus-progress-bar-container">
@@ -1513,7 +1722,7 @@ DSA.App = (() => {
                     ${syl.notes ? `<div class="syllabus-notes">📝 ${escapeHtml(syl.notes)}</div>` : ''}
                     <div class="syllabus-topics-header">
                         <span class="syllabus-topics-title">Topics & Chapters</span>
-                        <button class="btn btn-sm btn-accent" onclick="DSA.App.addSyllabusTopicPrompt('${syl.id}')" title="Add New Topic">
+                        <button class="btn btn-sm btn-accent" onclick="DSA.App.addSyllabusTopicPrompt(${inlineId(syl.id)})" title="Add New Topic">
                             ➕ Add Topic
                         </button>
                     </div>
@@ -1521,12 +1730,12 @@ DSA.App = (() => {
                         ${syl.topics.map((topic, idx) => `
                             <div class="syllabus-topic-item ${topic.completed ? 'completed' : ''}">
                                 <button class="syl-checkbox ${topic.completed ? 'checked' : ''}"
-                                        onclick="DSA.App.toggleSyllabusTopic('${syl.id}', ${idx})">
+                                        onclick="DSA.App.toggleSyllabusTopic(${inlineId(syl.id)}, ${idx})">
                                     ${topic.completed ? '✓' : ''}
                                 </button>
                                 <span class="syl-topic-name">${escapeHtml(topic.name)}</span>
-                                ${topic.completedDate ? `<span class="syl-topic-date">${topic.completedDate}</span>` : ''}
-                                <button class="syl-topic-delete" onclick="DSA.App.deleteSyllabusTopicConfirm('${syl.id}', ${idx})" title="Delete Topic">
+                                ${topic.completedDate ? `<span class="syl-topic-date">${escapeHtml(topic.completedDate)}</span>` : ''}
+                                <button class="syl-topic-delete" onclick="DSA.App.deleteSyllabusTopicConfirm(${inlineId(syl.id)}, ${idx})" title="Delete Topic">
                                     🗑️
                                 </button>
                             </div>
@@ -1547,7 +1756,7 @@ DSA.App = (() => {
         }
 
         let totalTopics = 0, totalCompleted = 0;
-        const streamProgress = {};
+        const streamProgress = Object.create(null);
 
         syllabi.forEach(syl => {
             totalTopics += syl.topics.length;
@@ -1600,43 +1809,43 @@ DSA.App = (() => {
     }
 
     function toggleSyllabusTopic(syllabusId, topicIndex) {
-        DSA.Store.toggleSyllabusTopic(syllabusId, topicIndex);
-        refreshSyllabus();
+        saveSyllabusChange(() => DSA.Store.toggleSyllabusTopic(syllabusId, topicIndex));
     }
 
     function deleteSyllabus(syllabusId) {
         if (!confirm('Delete this syllabus? This cannot be undone.')) return;
-        DSA.Store.deleteSyllabus(syllabusId);
-        showToast('Syllabus deleted.', 'info');
-        refreshSyllabus();
+        saveSyllabusChange(() => DSA.Store.deleteSyllabus(syllabusId), 'Syllabus deleted.');
     }
 
     function addSyllabusTopicPrompt(syllabusId) {
         const topicName = prompt('Enter the topic/chapter name:');
-        if (!topicName || !topicName.trim()) {
-            showToast('Topic name cannot be empty.', 'error');
+        if (topicName === null) return;
+        const name = topicName.trim();
+        if (!name) {
+            showToast('Enter a topic name.', 'warning');
             return;
         }
-        
-        const result = DSA.Store.addSyllabusTopic(syllabusId, topicName.trim());
-        if (result) {
-            showToast(`Topic "${topicName}" added successfully!`, 'success');
-            refreshSyllabus();
-        } else {
-            showToast('Failed to add topic.', 'error');
-        }
+        saveSyllabusChange(() => DSA.Store.addSyllabusTopic(syllabusId, name), `Added "${name}".`);
     }
 
     function deleteSyllabusTopicConfirm(syllabusId, topicIndex) {
         if (!confirm('Delete this topic? This cannot be undone.')) return;
-        
-        const result = DSA.Store.deleteSyllabusTopic(syllabusId, topicIndex);
-        if (result) {
-            showToast('Topic deleted successfully.', 'info');
-            refreshSyllabus();
-        } else {
-            showToast('Failed to delete topic.', 'error');
+        saveSyllabusChange(() => DSA.Store.deleteSyllabusTopic(syllabusId, topicIndex), 'Topic deleted.');
+    }
+
+    function saveSyllabusChange(change, message) {
+        try {
+            if (change() === null) {
+                showToast('This syllabus or topic is no longer available.', 'warning');
+                return false;
+            }
+        } catch (error) {
+            showToast(error.message, 'error');
+            return false;
         }
+        refreshSyllabus();
+        if (message) showToast(message, 'success');
+        return true;
     }
 
     // ════════════ PUBLIC API ════════════
@@ -1650,6 +1859,11 @@ DSA.App = (() => {
         refreshDashboard,
         refreshQuestionsList,
         refreshRevisions,
+        openRevisionQueue,
+        refreshPracticeData,
+        refreshPlannerSchedule,
+        completeQuestionRevision,
+        recordQuestionStudy,
         refreshAnalytics,
         refreshGrowth,
         refreshProfile,

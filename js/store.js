@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════
-   Study Tracker — Data Store (localStorage + Firestore)
-   Dual-persistence: localStorage for speed, Firestore for cloud sync
+   Study Tracker — Browser-local data store
+   Persists study data in the current browser.
    Universal platform for students of any stream
    ═══════════════════════════════════════════════════════ */
 
@@ -17,195 +17,12 @@ DSA.Store = (() => {
         SYLLABUS: 'dsa_syllabus'
     };
 
-    // ── Firestore Collections ──
-    const FS_COLLECTIONS = {
-        QUESTIONS: 'questions',
-        USER_STATS: 'userStats',
-        ACTIVITY_LOG: 'activityLog',
-        SETTINGS: 'settings',
-        DAILY_LOG: 'dailyLog',
-        CALENDAR_ENTRIES: 'calendarEntries',
-        SYLLABUS: 'syllabus'
-    };
-
     const DEFAULT_BASE_INTERVALS = Object.freeze([0, 1, 3, 7, 14, 21, 30, 45, 60, 90, 120, 150, 180, 210, 240]);
     const SETTINGS_LIMITS = Object.freeze({
         totalCycles: { min: 1, max: 30 },
         dailyGoal: { min: 1, max: 50 },
         autoDeleteAfterDays: { min: 0, max: 3650 }
     });
-
-    // ── Firestore Helpers (fire-and-forget with error logging) ──
-    function getFirestore() {
-        return (typeof db !== 'undefined') ? db : null;
-    }
-
-    function firestoreSet(collection, docId, data) {
-        // Defer to next tick to prevent blocking UI
-        setTimeout(() => {
-            const firestore = getFirestore();
-            if (!firestore) return;
-            firestore.collection(collection).doc(docId).set(data, { merge: true })
-                .then(() => console.log(`☁️ Synced → ${collection}/${docId}`))
-                .catch(err => console.warn(`☁️ Firestore write failed (${collection}/${docId}):`, err));
-        }, 0);
-    }
-
-    function firestoreDelete(collection, docId) {
-        const firestore = getFirestore();
-        if (!firestore) return;
-        firestore.collection(collection).doc(docId).delete()
-            .then(() => console.log(`☁️ Deleted → ${collection}/${docId}`))
-            .catch(err => console.warn(`☁️ Firestore delete failed (${collection}/${docId}):`, err));
-    }
-
-    /**
-     * Load all data from Firestore into localStorage (one-time cloud pull).
-     * Call this on app init to hydrate local cache from cloud.
-     */
-    function syncFromFirestore() {
-        const firestore = getFirestore();
-        if (!firestore) return Promise.resolve(false);
-
-        const syncQuestions = firestore.collection(FS_COLLECTIONS.QUESTIONS).get()
-            .then(snapshot => {
-                if (snapshot.empty) {
-                    console.log('☁️ Firestore: No cloud questions found. Using local data.');
-                    const localQuestions = getQuestions();
-                    if (localQuestions.length > 0) {
-                        console.log(`☁️ Pushing ${localQuestions.length} local questions to Firestore...`);
-                        localQuestions.forEach(q => firestoreSet(FS_COLLECTIONS.QUESTIONS, q.id, q));
-                    }
-                    return false;
-                }
-                const cloudQuestions = [];
-                snapshot.forEach(doc => cloudQuestions.push(doc.data()));
-                console.log(`☁️ Loaded ${cloudQuestions.length} questions from Firestore`);
-                const localQuestions = getQuestions();
-                const merged = mergeQuestionSets(localQuestions, cloudQuestions);
-                save(KEYS.QUESTIONS, merged);
-                merged.forEach(q => firestoreSet(FS_COLLECTIONS.QUESTIONS, q.id, q));
-                return true;
-            });
-
-        const syncUserStats = firestore.collection(FS_COLLECTIONS.USER_STATS).doc('current').get()
-            .then(doc => {
-                if (doc.exists) {
-                    save(KEYS.USER_STATS, doc.data());
-                    console.log('☁️ Loaded user stats from Firestore');
-                    return true;
-                }
-                const localStats = getUserStats();
-                firestoreSet(FS_COLLECTIONS.USER_STATS, 'current', localStats);
-                return false;
-            });
-
-        const syncSettings = firestore.collection(FS_COLLECTIONS.SETTINGS).doc('current').get()
-            .then(doc => {
-                if (doc.exists) {
-                    save(KEYS.SETTINGS, normalizeSettings(doc.data()));
-                    console.log('☁️ Loaded settings from Firestore');
-                    return true;
-                }
-                const localSettings = getSettings();
-                firestoreSet(FS_COLLECTIONS.SETTINGS, 'current', localSettings);
-                return false;
-            });
-
-        const syncActivityLog = firestore.collection(FS_COLLECTIONS.ACTIVITY_LOG).doc('current').get()
-            .then(doc => {
-                const docData = doc.exists ? doc.data() : null;
-                if (docData && Array.isArray(docData.entries) && docData.entries.length > 0) {
-                    save(KEYS.ACTIVITY_LOG, docData.entries);
-                    console.log('☁️ Loaded activity log from Firestore');
-                    return true;
-                }
-                const localLog = getActivityLog();
-                if (localLog.length > 0) {
-                    firestoreSet(FS_COLLECTIONS.ACTIVITY_LOG, 'current', { entries: localLog });
-                }
-                return false;
-            });
-
-        const syncDailyLog = firestore.collection(FS_COLLECTIONS.DAILY_LOG).doc('current').get()
-            .then(doc => {
-                const docData = doc.exists ? doc.data() : null;
-                if (docData && typeof docData === 'object' && Object.keys(docData).length > 0) {
-                    save(KEYS.DAILY_LOG, docData);
-                    console.log('☁️ Loaded daily log from Firestore');
-                    return true;
-                }
-                const localLog = getDailyLog();
-                if (Object.keys(localLog).length > 0) {
-                    firestoreSet(FS_COLLECTIONS.DAILY_LOG, 'current', localLog);
-                }
-                return false;
-            });
-
-        const syncCalendarEntries = firestore.collection(FS_COLLECTIONS.CALENDAR_ENTRIES).doc('current').get()
-            .then(doc => {
-                const docData = doc.exists ? doc.data() : null;
-                if (docData && typeof docData === 'object') {
-                    save(KEYS.CALENDAR_ENTRIES, docData);
-                    console.log('☁️ Loaded calendar entries from Firestore');
-                    return true;
-                }
-                const localEntries = getCalendarEntries();
-                if (Object.keys(localEntries).length > 0) {
-                    firestoreSet(FS_COLLECTIONS.CALENDAR_ENTRIES, 'current', localEntries);
-                }
-                return false;
-            });
-
-        const syncSyllabus = firestore.collection(FS_COLLECTIONS.SYLLABUS).get()
-            .then(snapshot => {
-                if (snapshot.empty) {
-                    const localSyllabi = getSyllabi();
-                    if (localSyllabi.length > 0) {
-                        localSyllabi.forEach(s => firestoreSet(FS_COLLECTIONS.SYLLABUS, s.id, s));
-                    }
-                    return false;
-                }
-                const cloudSyllabi = [];
-                snapshot.forEach(doc => cloudSyllabi.push(doc.data()));
-                console.log(`☁️ Loaded ${cloudSyllabi.length} syllabi from Firestore`);
-                // Merge: cloud wins for conflicts (same ID), by updatedAt timestamp
-                const localSyllabi = getSyllabi();
-                const mergedSyllabi = mergeQuestionSets(localSyllabi, cloudSyllabi);
-                save(KEYS.SYLLABUS, mergedSyllabi);
-                mergedSyllabi.forEach(s => firestoreSet(FS_COLLECTIONS.SYLLABUS, s.id, s));
-                return true;
-            });
-
-        const allSyncs = [
-            syncQuestions, syncUserStats, syncSettings,
-            syncActivityLog, syncDailyLog, syncCalendarEntries, syncSyllabus
-        ].map(p => p.catch(err => {
-            console.warn('☁️ Firestore sync partial failure:', err);
-            return false;
-        }));
-
-        return Promise.all(allSyncs).then(results => {
-            const synced = results.some(r => r === true);
-            if (synced) console.log('☁️ Cloud sync complete — all data loaded from Firestore');
-            return synced;
-        });
-    }
-
-    /**
-     * Merge two question arrays. Cloud data wins on conflicts (same ID).
-     */
-    function mergeQuestionSets(local, cloud) {
-        const map = new Map();
-        local.forEach(q => map.set(q.id, q));
-        cloud.forEach(q => {
-            const existing = map.get(q.id);
-            if (!existing || (q.updatedAt && existing.updatedAt && q.updatedAt > existing.updatedAt)) {
-                map.set(q.id, q);
-            }
-        });
-        return Array.from(map.values());
-    }
 
     // ── Default Data ──
     const defaultSettings = () => ({
@@ -229,13 +46,19 @@ DSA.Store = (() => {
     });
 
     // ── Persistence Helpers ──
+    function isRecord(value) {
+        return value !== null && typeof value === 'object' && !Array.isArray(value);
+    }
+
     function load(key, fallback) {
+        const defaultValue = typeof fallback === 'function' ? fallback() : fallback;
         try {
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : (typeof fallback === 'function' ? fallback() : fallback);
+            const value = JSON.parse(localStorage.getItem(key));
+            const validShape = Array.isArray(defaultValue) ? Array.isArray(value) : isRecord(value);
+            return validShape ? value : defaultValue;
         } catch (e) {
             console.error(`Store: Error loading ${key}`, e);
-            return typeof fallback === 'function' ? fallback() : fallback;
+            return defaultValue;
         }
     }
 
@@ -244,6 +67,31 @@ DSA.Store = (() => {
             localStorage.setItem(key, JSON.stringify(data));
         } catch (e) {
             console.error(`Store: Error saving ${key}`, e);
+            throw new Error('Could not save changes in this browser. Check browser storage and try again.');
+        }
+    }
+
+    function writeStorageChanges(changes) {
+        const previous = changes.map(([key]) => [key, localStorage.getItem(key)]);
+        let written = 0;
+        const write = (key, value) => {
+            if (value === null) localStorage.removeItem(key);
+            else localStorage.setItem(key, value);
+        };
+        try {
+            for (const [key, value] of changes) {
+                write(key, value);
+                written++;
+            }
+        } catch (error) {
+            for (const [key, value] of previous.slice(0, written).reverse()) {
+                try {
+                    write(key, value);
+                } catch (rollbackError) {
+                    console.error(`Store: Could not restore ${key}`, rollbackError);
+                }
+            }
+            throw error;
         }
     }
 
@@ -275,6 +123,7 @@ DSA.Store = (() => {
     }
 
     function normalizeSettings(settings = {}) {
+        settings = settings || {};
         const defaults = defaultSettings();
 
         return {
@@ -302,7 +151,7 @@ DSA.Store = (() => {
         };
     }
 
-    // ── Question CRUD (localStorage + Firestore) ──
+    // ── Question CRUD ──
     function getQuestions() {
         return load(KEYS.QUESTIONS, []);
     }
@@ -311,8 +160,7 @@ DSA.Store = (() => {
         save(KEYS.QUESTIONS, questions);
     }
 
-    function addQuestion(question) {
-        const questions = getQuestions();
+    function initializeQuestion(question) {
         question.id = generateId();
         question.createdAt = new Date().toISOString();
         question.updatedAt = new Date().toISOString();
@@ -321,59 +169,99 @@ DSA.Store = (() => {
         question.easeFactor = 2.5;
         question.streak = 0;
         question.xpEarned = 0;
-
-        // Calculate first revision date
-        const settings = getSettings();
-        question.nextRevisionDate = DSA.RevisionEngine
-            ? DSA.RevisionEngine.calculateNextDate(question, settings)
-            : new Date().toISOString().split('T')[0];
-
-        questions.push(question);
-        saveQuestions(questions);
-
-        // ☁️ Sync to Firestore (deferred, non-blocking)
-        firestoreSet(FS_COLLECTIONS.QUESTIONS, question.id, question);
-
-        addActivity('add', `Added "${question.name}" (${question.subject})`);
         return question;
     }
 
-    function updateQuestion(id, updates) {
+    function addQuestion(question) {
+        const questions = getQuestions();
+        initializeQuestion(question);
+
+        // Calculate first revision date
+        const settings = getSettings();
+        question.nextRevisionDate = question.status === 'Mastered' ? null : DSA.RevisionEngine
+            ? DSA.RevisionEngine.calculateNextDate(question, settings)
+            : todayStr();
+
+        questions.push(question);
+        saveWithActivity(KEYS.QUESTIONS, questions, 'add', `Added "${question.name}" (${question.subject})`);
+        return question;
+    }
+
+    function addPracticeQuestions(topic, entries, dailyLimit) {
+        const planId = generateId();
+        const startDate = todayStr();
+        const added = entries.map((entry, index) => initializeQuestion({
+            name: entry.name,
+            subject: topic,
+            platform: entry.platformLink ? 'Online Course' : 'Other',
+            platformLink: entry.platformLink,
+            difficulty: entry.difficulty,
+            status: 'Not Started',
+            dateSolved: '',
+            nextRevisionDate: null,
+            practicePlanId: planId,
+            practiceTopic: topic,
+            practiceDate: addDays(startDate, Math.floor(index / dailyLimit))
+        }));
+        saveWithActivity(KEYS.QUESTIONS, [...getQuestions(), ...added], 'add', `Added ${added.length} questions to ${topic}`);
+        return planId;
+    }
+
+    function updateQuestion(id, updates, activity) {
         const questions = getQuestions();
         const idx = questions.findIndex(q => q.id === id);
         if (idx === -1) return null;
         questions[idx] = { ...questions[idx], ...updates, updatedAt: new Date().toISOString() };
-        saveQuestions(questions);
-
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.QUESTIONS, id, questions[idx]);
-
+        if (activity) saveWithActivity(KEYS.QUESTIONS, questions, activity.type, activity.text);
+        else saveQuestions(questions);
         return questions[idx];
     }
 
+    function commitRevision(id, updates, xp, activityText) {
+        const questions = getQuestions();
+        const index = questions.findIndex(question => question.id === id);
+        const current = questions[index];
+        if (!current || current.status === 'Not Started' || current.status === 'Mastered') return null;
+        const revised = { ...current, ...updates, updatedAt: new Date().toISOString() };
+        questions[index] = revised;
+
+        const day = revised.lastRevisionDate;
+        const dailyLog = getDailyLog();
+        const activity = { solved: 0, revised: 0, xpEarned: 0, ...dailyLog[day] };
+        activity.revised++;
+        activity.xpEarned += xp;
+        dailyLog[day] = activity;
+
+        const stats = getUserStats();
+        stats.totalRevisions = (stats.totalRevisions || 0) + 1;
+        saveRecords([
+            [KEYS.QUESTIONS, questions],
+            [KEYS.DAILY_LOG, dailyLog],
+            [KEYS.USER_STATS, stats],
+            [KEYS.ACTIVITY_LOG, nextActivityLog('revision', activityText)]
+        ]);
+        return revised;
+    }
+
     function deleteQuestion(id) {
-        const questions = getQuestions().filter(q => q.id !== id);
-        saveQuestions(questions);
-
-        // ☁️ Delete from Firestore
-        firestoreDelete(FS_COLLECTIONS.QUESTIONS, id);
-
-        addActivity('delete', 'Deleted a question');
+        const questions = getQuestions();
+        const remaining = questions.filter(q => q.id !== id);
+        if (remaining.length === questions.length) return false;
+        saveWithActivity(KEYS.QUESTIONS, remaining, 'delete', 'Deleted a question');
+        return true;
     }
 
     function getQuestionById(id) {
         return getQuestions().find(q => q.id === id) || null;
     }
 
-    // ── User Stats (localStorage + Firestore) ──
+    // ── User Stats ──
     function getUserStats() {
-        return load(KEYS.USER_STATS, defaultUserStats);
+        return { ...defaultUserStats(), ...load(KEYS.USER_STATS, {}) };
     }
 
     function saveUserStats(stats) {
         save(KEYS.USER_STATS, stats);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.USER_STATS, 'current', stats);
     }
 
     function updateUserStats(updates) {
@@ -383,7 +271,7 @@ DSA.Store = (() => {
         return stats;
     }
 
-    // ── Settings (localStorage + Firestore) ──
+    // ── Settings ──
     function getSettings() {
         return normalizeSettings(load(KEYS.SETTINGS, defaultSettings));
     }
@@ -391,8 +279,6 @@ DSA.Store = (() => {
     function saveSettings(settings) {
         const normalizedSettings = normalizeSettings(settings);
         save(KEYS.SETTINGS, normalizedSettings);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.SETTINGS, 'current', normalizedSettings);
     }
 
     // ── Activity Log ──
@@ -400,7 +286,7 @@ DSA.Store = (() => {
         return load(KEYS.ACTIVITY_LOG, []);
     }
 
-    function addActivity(type, text) {
+    function nextActivityLog(type, text) {
         const log = getActivityLog();
         const entry = {
             id: generateId(),
@@ -411,9 +297,24 @@ DSA.Store = (() => {
         log.unshift(entry);
         // Keep last 200 activities
         if (log.length > 200) log.length = 200;
-        save(KEYS.ACTIVITY_LOG, log);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.ACTIVITY_LOG, 'current', { entries: log });
+        return log;
+    }
+
+    function addActivity(type, text) {
+        save(KEYS.ACTIVITY_LOG, nextActivityLog(type, text));
+    }
+
+    function saveWithActivity(key, value, type, text) {
+        saveRecords([[key, value], [KEYS.ACTIVITY_LOG, nextActivityLog(type, text)]]);
+    }
+
+    function saveRecords(records) {
+        try {
+            writeStorageChanges(records.map(([key, value]) => [key, JSON.stringify(value)]));
+        } catch (error) {
+            console.error('Store: Could not save related records', error);
+            throw new Error('Could not save changes in this browser. Check browser storage and try again.');
+        }
     }
 
     // ── Daily Log (tracks per-day completions for streaks/heatmap) ──
@@ -423,26 +324,18 @@ DSA.Store = (() => {
 
     function logDailyActivity(dateStr, type) {
         const log = getDailyLog();
-        if (!log[dateStr]) {
-            log[dateStr] = { solved: 0, revised: 0, xpEarned: 0 };
-        }
+        log[dateStr] = { solved: 0, revised: 0, xpEarned: 0, ...log[dateStr] };
         if (type === 'solved') log[dateStr].solved++;
         if (type === 'revised') log[dateStr].revised++;
         save(KEYS.DAILY_LOG, log);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.DAILY_LOG, 'current', log);
         return log;
     }
 
     function addDailyXP(dateStr, xp) {
         const log = getDailyLog();
-        if (!log[dateStr]) {
-            log[dateStr] = { solved: 0, revised: 0, xpEarned: 0 };
-        }
+        log[dateStr] = { solved: 0, revised: 0, xpEarned: 0, ...log[dateStr] };
         log[dateStr].xpEarned += xp;
         save(KEYS.DAILY_LOG, log);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.DAILY_LOG, 'current', log);
     }
 
     // ── Export / Import ──
@@ -453,6 +346,7 @@ DSA.Store = (() => {
             activityLog: getActivityLog(),
             settings: getSettings(),
             dailyLog: getDailyLog(),
+            calendarEntries: getCalendarEntries(),
             syllabus: getSyllabi(),
             exportDate: new Date().toISOString(),
             version: '2.0'
@@ -462,34 +356,66 @@ DSA.Store = (() => {
     function importData(json) {
         try {
             const data = JSON.parse(json);
+            if (!isRecord(data)) return false;
+            const validId = value => typeof value === 'string' && /^[a-z\d_-]+$/i.test(value);
+            const validDate = value => {
+                if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+                const date = new Date(`${value}T00:00:00Z`);
+                return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+            };
+            const optionalDate = value => value == null || value === '' || validDate(value);
+            const optionalCount = value => value == null || (Number.isSafeInteger(value) && value >= 0);
+            const stringArray = value => Array.isArray(value) && value.every(item => typeof item === 'string');
+            const identifiedRecords = (value, validate) => Array.isArray(value) &&
+                value.every(item => isRecord(item) && validId(item.id) && validate(item)) &&
+                new Set(value.map(item => item.id)).size === value.length;
+            const validators = {
+                questions: value => identifiedRecords(value, question =>
+                    ['name', 'subject', 'status', 'difficulty'].every(key => typeof question[key] === 'string') &&
+                    (!question.practicePlanId || (validId(question.practicePlanId) && validDate(question.practiceDate))) &&
+                    ['dateSolved', 'nextRevisionDate', 'lastRevisionDate'].every(key => optionalDate(question[key])) &&
+                    ['revisionCycle', 'streak', 'xpEarned', 'timeTaken'].every(key => optionalCount(question[key])) &&
+                    (question.easeFactor == null || (Number.isFinite(question.easeFactor) && question.easeFactor > 0)) &&
+                    (question.tags == null || stringArray(question.tags)) &&
+                    (question.revisionHistory == null || (Array.isArray(question.revisionHistory) &&
+                        question.revisionHistory.every(revision => isRecord(revision) && optionalDate(revision.date))))),
+                userStats: value => isRecord(value) &&
+                    ['totalXP', 'level', 'currentStreak', 'longestStreak', 'totalRevisions'].every(key => optionalCount(value[key])) &&
+                    optionalDate(value.lastActiveDate) && (value.badges == null || stringArray(value.badges)),
+                activityLog: value => Array.isArray(value) && value.every(isRecord),
+                settings: isRecord,
+                dailyLog: value => isRecord(value) && Object.entries(value).every(([day, activity]) =>
+                    validDate(day) && isRecord(activity) && ['solved', 'revised', 'xpEarned'].every(key => optionalCount(activity[key]))),
+                calendarEntries: value => isRecord(value) && Object.entries(value).every(([day, entry]) =>
+                    validDate(day) && isRecord(entry)),
+                syllabus: value => identifiedRecords(value, syllabus =>
+                    typeof syllabus.name === 'string' && typeof syllabus.stream === 'string' && optionalDate(syllabus.examDate) &&
+                    Array.isArray(syllabus.topics) && syllabus.topics.every(topic => isRecord(topic) && typeof topic.name === 'string'))
+            };
+            const sections = Object.keys(validators).filter(key => Object.prototype.hasOwnProperty.call(data, key));
+            if (!sections.length || sections.some(key => !validators[key](data[key]))) return false;
+
+            const storageKeys = {
+                questions: KEYS.QUESTIONS,
+                userStats: KEYS.USER_STATS,
+                activityLog: KEYS.ACTIVITY_LOG,
+                settings: KEYS.SETTINGS,
+                dailyLog: KEYS.DAILY_LOG,
+                calendarEntries: KEYS.CALENDAR_ENTRIES,
+                syllabus: KEYS.SYLLABUS
+            };
+            if (data.settings) data.settings = normalizeSettings(data.settings);
             if (data.questions) {
-                save(KEYS.QUESTIONS, data.questions);
-                // ☁️ Sync imported questions to Firestore
-                data.questions.forEach(q => firestoreSet(FS_COLLECTIONS.QUESTIONS, q.id, q));
+                data.questions = data.questions.map(question => ({
+                    ...question,
+                    revisionCycle: question.revisionCycle ?? 0,
+                    revisionHistory: question.revisionHistory ?? [],
+                    easeFactor: question.easeFactor ?? 2.5,
+                    streak: question.streak ?? 0,
+                    xpEarned: question.xpEarned ?? 0
+                }));
             }
-            if (data.userStats) {
-                save(KEYS.USER_STATS, data.userStats);
-                // ☁️ Sync to Firestore
-                firestoreSet(FS_COLLECTIONS.USER_STATS, 'current', data.userStats);
-            }
-            if (data.activityLog) {
-                save(KEYS.ACTIVITY_LOG, data.activityLog);
-                // ☁️ Sync to Firestore
-                firestoreSet(FS_COLLECTIONS.ACTIVITY_LOG, 'current', { entries: data.activityLog });
-            }
-            if (data.settings) {
-                saveSettings(data.settings);
-            }
-            if (data.dailyLog) {
-                save(KEYS.DAILY_LOG, data.dailyLog);
-                // ☁️ Sync to Firestore
-                firestoreSet(FS_COLLECTIONS.DAILY_LOG, 'current', data.dailyLog);
-            }
-            if (data.syllabus) {
-                save(KEYS.SYLLABUS, data.syllabus);
-                // ☁️ Sync imported syllabi to Firestore
-                data.syllabus.forEach(s => firestoreSet(FS_COLLECTIONS.SYLLABUS, s.id, s));
-            }
+            writeStorageChanges(sections.map(section => [storageKeys[section], JSON.stringify(data[section])]));
             return true;
         } catch (e) {
             console.error('Import failed:', e);
@@ -498,52 +424,12 @@ DSA.Store = (() => {
     }
 
     function resetAllData() {
-        // Clear localStorage immediately
-        Object.values(KEYS).forEach(key => localStorage.removeItem(key));
-
-        // Clear all Firestore collections and return a Promise
-        const firestore = getFirestore();
-        if (!firestore) return Promise.resolve();
-
-        const deletePromises = [];
-
-        // Delete all question documents
-        deletePromises.push(
-            firestore.collection(FS_COLLECTIONS.QUESTIONS).get()
-                .then(snapshot => {
-                    const batch = firestore.batch();
-                    snapshot.forEach(doc => batch.delete(doc.ref));
-                    return batch.commit();
-                })
-                .catch(err => console.warn('☁️ Firestore reset (questions) failed:', err))
-        );
-
-        // Delete all syllabus documents
-        deletePromises.push(
-            firestore.collection(FS_COLLECTIONS.SYLLABUS).get()
-                .then(snapshot => {
-                    const batch = firestore.batch();
-                    snapshot.forEach(doc => batch.delete(doc.ref));
-                    return batch.commit();
-                })
-                .catch(err => console.warn('☁️ Firestore reset (syllabus) failed:', err))
-        );
-
-        // Delete single-document collections
-        [
-            [FS_COLLECTIONS.USER_STATS, 'current'],
-            [FS_COLLECTIONS.SETTINGS, 'current'],
-            [FS_COLLECTIONS.ACTIVITY_LOG, 'current'],
-            [FS_COLLECTIONS.DAILY_LOG, 'current'],
-            [FS_COLLECTIONS.CALENDAR_ENTRIES, 'current']
-        ].forEach(([col, docId]) => {
-            deletePromises.push(
-                firestore.collection(col).doc(docId).delete()
-                    .catch(err => console.warn(`☁️ Firestore reset (${col}) failed:`, err))
-            );
-        });
-
-        return Promise.all(deletePromises);
+        try {
+            writeStorageChanges(Object.values(KEYS).map(key => [key, null]));
+        } catch (error) {
+            console.error('Store: Could not reset data', error);
+            throw new Error('Could not reset this browser’s study data. Check browser storage and try again.');
+        }
     }
 
     // ── Auto-Delete Old Topics ──
@@ -555,29 +441,22 @@ DSA.Store = (() => {
 
         const questions = getQuestions();
         const toDelete = questions.filter(q => {
+            if (q.practicePlanId) return false;
             const lastTouched = q.updatedAt || q.createdAt;
-            // No timestamp means we cannot determine age — treat as old and include in deletion
-            return !lastTouched || lastTouched < cutoffStr;
+            return lastTouched && lastTouched < cutoffStr;
         });
 
         if (toDelete.length === 0) return 0;
 
-        const remaining = questions.filter(q => {
-            const lastTouched = q.updatedAt || q.createdAt;
-            return lastTouched && lastTouched >= cutoffStr;
-        });
-        saveQuestions(remaining);
-
-        // ☁️ Delete from Firestore
-        toDelete.forEach(q => firestoreDelete(FS_COLLECTIONS.QUESTIONS, q.id));
-
-        addActivity('delete', `Auto-deleted ${toDelete.length} topic(s) older than ${days} day(s)`);
+        const deletedIds = new Set(toDelete.map(q => q.id));
+        const remaining = questions.filter(q => !deletedIds.has(q.id));
+        saveWithActivity(KEYS.QUESTIONS, remaining, 'delete', `Auto-deleted ${toDelete.length} topic(s) older than ${days} day(s)`);
         return toDelete.length;
     }
 
     // ── Calendar Entries CRUD ──
     function getCalendarEntries() {
-        return load(KEYS.CALENDAR_ENTRIES) || {};
+        return load(KEYS.CALENDAR_ENTRIES, {});
     }
 
     function saveCalendarEntries(entries) {
@@ -597,8 +476,6 @@ DSA.Store = (() => {
             lastModified: new Date().toISOString()
         };
         saveCalendarEntries(entries);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.CALENDAR_ENTRIES, 'current', entries);
         return entries[dateKey];
     }
 
@@ -606,8 +483,6 @@ DSA.Store = (() => {
         const entries = getCalendarEntries();
         delete entries[dateKey];
         saveCalendarEntries(entries);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.CALENDAR_ENTRIES, 'current', entries);
     }
 
     // ── Syllabus CRUD ──
@@ -625,10 +500,7 @@ DSA.Store = (() => {
         syllabus.createdAt = new Date().toISOString();
         syllabus.updatedAt = new Date().toISOString();
         syllabi.push(syllabus);
-        saveSyllabi(syllabi);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.SYLLABUS, syllabus.id, syllabus);
-        addActivity('add', `Added syllabus "${syllabus.name}" (${syllabus.stream})`);
+        saveWithActivity(KEYS.SYLLABUS, syllabi, 'add', `Added syllabus "${syllabus.name}" (${syllabus.stream})`);
         return syllabus;
     }
 
@@ -638,32 +510,27 @@ DSA.Store = (() => {
         if (idx === -1) return null;
         syllabi[idx] = { ...syllabi[idx], ...updates, updatedAt: new Date().toISOString() };
         saveSyllabi(syllabi);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.SYLLABUS, id, syllabi[idx]);
         return syllabi[idx];
     }
 
     function deleteSyllabus(id) {
-        const syllabi = getSyllabi().filter(s => s.id !== id);
-        saveSyllabi(syllabi);
-        // ☁️ Delete from Firestore
-        firestoreDelete(FS_COLLECTIONS.SYLLABUS, id);
-        addActivity('delete', 'Deleted a syllabus');
+        const syllabi = getSyllabi();
+        const remaining = syllabi.filter(s => s.id !== id);
+        if (remaining.length === syllabi.length) return null;
+        saveWithActivity(KEYS.SYLLABUS, remaining, 'delete', 'Deleted a syllabus');
     }
 
     function toggleSyllabusTopic(syllabusId, topicIndex) {
         const syllabi = getSyllabi();
         const syl = syllabi.find(s => s.id === syllabusId);
-        if (!syl || !syl.topics[topicIndex]) return;
+        if (!syl || !syl.topics[topicIndex]) return null;
         
         syl.topics[topicIndex].completed = !syl.topics[topicIndex].completed;
         syl.topics[topicIndex].completedDate = syl.topics[topicIndex].completed 
-            ? new Date().toISOString().split('T')[0] 
+            ? todayStr()
             : null;
         syl.updatedAt = new Date().toISOString();
         saveSyllabi(syllabi);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.SYLLABUS, syllabusId, syl);
         return syl;
     }
 
@@ -680,10 +547,7 @@ DSA.Store = (() => {
         
         syl.topics.push(newTopic);
         syl.updatedAt = new Date().toISOString();
-        saveSyllabi(syllabi);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.SYLLABUS, syllabusId, syl);
-        addActivity('add', `Added topic "${topicName}" to ${syl.name}`);
+        saveWithActivity(KEYS.SYLLABUS, syllabi, 'add', `Added topic "${topicName}" to ${syl.name}`);
         return syl;
     }
 
@@ -695,20 +559,29 @@ DSA.Store = (() => {
         const topicName = syl.topics[topicIndex].name;
         syl.topics.splice(topicIndex, 1);
         syl.updatedAt = new Date().toISOString();
-        saveSyllabi(syllabi);
-        // ☁️ Sync to Firestore
-        firestoreSet(FS_COLLECTIONS.SYLLABUS, syllabusId, syl);
-        addActivity('delete', `Removed topic "${topicName}" from ${syl.name}`);
+        saveWithActivity(KEYS.SYLLABUS, syllabi, 'delete', `Removed topic "${topicName}" from ${syl.name}`);
         return syl;
     }
 
     // ── Helpers ──
     function generateId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+        return globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    function dateKey(date = new Date()) {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${date.getFullYear()}-${month}-${day}`;
     }
 
     function todayStr() {
-        return new Date().toISOString().split('T')[0];
+        return dateKey();
+    }
+
+    function addDays(date, days) {
+        const result = new Date(`${date}T00:00:00Z`);
+        result.setUTCDate(result.getUTCDate() + days);
+        return result.toISOString().slice(0, 10);
     }
 
     // ── Public API ──
@@ -716,7 +589,9 @@ DSA.Store = (() => {
         getQuestions,
         saveQuestions,
         addQuestion,
+        addPracticeQuestions,
         updateQuestion,
+        commitRevision,
         deleteQuestion,
         getQuestionById,
         getUserStats,
@@ -744,8 +619,9 @@ DSA.Store = (() => {
         importData,
         resetAllData,
         deleteOldTopics,
-        syncFromFirestore,
         todayStr,
+        dateKey,
+        addDays,
         generateId,
         KEYS,
         // Alias used by modern-features.js

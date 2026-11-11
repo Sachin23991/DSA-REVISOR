@@ -33,7 +33,9 @@ private:
 
     static string toLower(const string& s) {
         string r = s;
-        transform(r.begin(), r.end(), r.begin(), ::tolower);
+        transform(r.begin(), r.end(), r.begin(), [](unsigned char ch) {
+            return static_cast<char>(tolower(ch));
+        });
         return r;
     }
 
@@ -75,16 +77,14 @@ private:
     }
 
     bool removeHelper(TrieNode* node, const string& word, int depth) {
-        if (!node) return false;
+        --node->prefixCount;
         if (depth == static_cast<int>(word.size())) {
-            if (!node->isEndOfWord) return false;
             node->isEndOfWord = false;
-            totalWords_--;
+            node->questionId.clear();
             return node->children.empty();
         }
         char ch = word[depth];
         auto it = node->children.find(ch);
-        if (it == node->children.end()) return false;
         if (removeHelper(it->second.get(), word, depth + 1)) {
             node->children.erase(ch);
             return !node->isEndOfWord && node->children.empty();
@@ -98,6 +98,7 @@ public:
     // Insert — O(L)
     void insert(const string& word, const string& qid = "") {
         string low = toLower(word);
+        if (search(low)) return;
         TrieNode* cur = root_.get();
         for (char ch : low) {
             cur->prefixCount++;
@@ -106,11 +107,9 @@ public:
             cur = cur->children[ch].get();
         }
         cur->prefixCount++;
-        if (!cur->isEndOfWord) {
-            cur->isEndOfWord = true;
-            cur->questionId  = qid;
-            totalWords_++;
-        }
+        cur->isEndOfWord = true;
+        cur->questionId = qid;
+        totalWords_++;
     }
 
     void insertQuestion(const Question& q) {
@@ -199,7 +198,11 @@ public:
     }
 
     bool removeWord(const string& word) {
-        return removeHelper(root_.get(), toLower(word), 0);
+        const string low = toLower(word);
+        if (!search(low)) return false;
+        removeHelper(root_.get(), low, 0);
+        --totalWords_;
+        return true;
     }
 
     int getTotalWords() const { return totalWords_; }
