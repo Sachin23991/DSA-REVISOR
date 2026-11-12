@@ -187,24 +187,44 @@ DSA.Store = (() => {
         return question;
     }
 
-    function addPracticeQuestions(topic, entries, dailyLimit) {
-        const planId = generateId();
+    function addPracticeQuestions(groups, dailyLimit) {
+        // Support both old signature (topic, entries, dailyLimit) and new (groups, dailyLimit)
+        if (typeof groups === 'string') {
+            groups = [{ topic: groups, entries: arguments[1] || [] }];
+            dailyLimit = arguments[2] || dailyLimit;
+        }
+        if (!Array.isArray(groups)) groups = [groups];
         const startDate = todayStr();
-        const added = entries.map((entry, index) => initializeQuestion({
-            name: entry.name,
-            subject: topic,
-            platform: entry.platformLink ? 'Online Course' : 'Other',
-            platformLink: entry.platformLink,
-            difficulty: entry.difficulty,
-            status: 'Not Started',
-            dateSolved: '',
-            nextRevisionDate: null,
-            practicePlanId: planId,
-            practiceTopic: topic,
-            practiceDate: addDays(startDate, Math.floor(index / dailyLimit))
-        }));
-        saveWithActivity(KEYS.QUESTIONS, [...getQuestions(), ...added], 'add', `Added ${added.length} questions to ${topic}`);
-        return planId;
+        const allAdded = [];
+        const planIds = [];
+        let globalIndex = 0;
+
+        for (const group of groups) {
+            const topic = group.topic || 'Practice Questions';
+            const entries = group.entries || [];
+            if (!entries.length) continue;
+            const planId = generateId();
+            planIds.push(planId);
+            const added = entries.map((entry, index) => initializeQuestion({
+                name: entry.name,
+                subject: topic,
+                platform: entry.platformLink ? 'Online Course' : 'Other',
+                platformLink: entry.platformLink,
+                difficulty: entry.difficulty,
+                status: 'Not Started',
+                dateSolved: '',
+                nextRevisionDate: null,
+                practicePlanId: planId,
+                practiceTopic: topic,
+                practiceDate: addDays(startDate, Math.floor(globalIndex / dailyLimit))
+            }));
+            globalIndex += entries.length;
+            allAdded.push(...added);
+        }
+
+        if (!allAdded.length) return planIds;
+        saveWithActivity(KEYS.QUESTIONS, [...getQuestions(), ...allAdded], 'add', `Added ${allAdded.length} questions across ${planIds.length} ${planIds.length === 1 ? 'plan' : 'plans'}`);
+        return planIds;
     }
 
     function updateQuestion(id, updates, activity) {

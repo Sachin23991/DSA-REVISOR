@@ -66,27 +66,63 @@ DSA.PracticePlan = (() => {
 
     function parse(text, links = new Map(), headings = new Set()) {
         const lines = text.split(/\r\n?|\n/).filter(line => line.trim());
-        let topic = 'Practice Questions';
-        const firstLine = lines[0]?.trim() || '';
-        const explicitHeading = firstLine.match(/^(?:topic|subject|chapter)\s*:\s*(.*)$/i) ||
-            (lines.length > 1 && firstLine.match(/^#{1,6}\s+(.+)$/));
-        const numberedHeading = lines.length > 2 &&
-            Number(lines[1].trim().match(numberedPrefix)?.[1] || lines[1].match(/^\s*(\d+)\t/)?.[1]) === 1 &&
-            Number(lines[2].trim().match(numberedPrefix)?.[1] || lines[2].match(/^\s*(\d+)\t/)?.[1]) === 2;
-        const plainHeading = lines.length > 1 && (headings.has(normalizeText(firstLine)) ||
-            (questionName(firstLine) === firstLine && firstLine.length < 80 && !/[?\t|]|https?:|www\./i.test(firstLine) &&
-                !knownDomain.test(firstLine) && (firstLine.endsWith(':') || numberedHeading)));
-        if (explicitHeading || plainHeading) {
-            topic = normalizeText(explicitHeading ? explicitHeading[1] : firstLine.replace(/:$/, '')) || topic;
-            lines.shift();
+        const phaseHeading = /^Phase\s+\d+\s*:\s*(.+)$/i;
+        const rangeSuffix = /\s*\(\s*\d+\s*[-–]\s*\d+\s*\)\s*$/;
+        const groups = [];
+        let currentTopic = 'Practice Questions';
+        let currentEntries = [];
+        let hasPhase = false;
+
+        // First pass: detect if there are any Phase headings
+        for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (phaseHeading.test(line)) {
+                hasPhase = true;
+                break;
+            }
         }
 
-        const entries = [];
+        // If no phase headings, use the original single-topic parsing
+        if (!hasPhase) {
+            const firstLine = lines[0]?.trim() || '';
+            const explicitHeading = firstLine.match(/^(?:topic|subject|chapter)\s*:\s*(.*)$/i) ||
+                (lines.length > 1 && firstLine.match(/^#{1,6}\s+(.+)$/));
+            const numberedHeading = lines.length > 2 &&
+                Number(lines[1].trim().match(numberedPrefix)?.[1] || lines[1].match(/^\s*(\d+)\t/)?.[1]) === 1 &&
+                Number(lines[2].trim().match(numberedPrefix)?.[1] || lines[2].match(/^\s*(\d+)\t/)?.[1]) === 2;
+            const plainHeading = lines.length > 1 && (headings.has(normalizeText(firstLine)) ||
+                (questionName(firstLine) === firstLine && firstLine.length < 80 && !/[?\t|]|https?:|www\./i.test(firstLine) &&
+                    !knownDomain.test(firstLine) && (firstLine.endsWith(':') || numberedHeading)));
+            if (explicitHeading || plainHeading) {
+                currentTopic = normalizeText(explicitHeading ? explicitHeading[1] : firstLine.replace(/:$/, '')) || currentTopic;
+                lines.shift();
+            }
+        }
+
         const linkPositions = new Map();
         let schema;
         let previousNumbered = false;
+
+        const flushGroup = () => {
+            if (currentEntries.length) {
+                groups.push({ topic: currentTopic, entries: currentEntries });
+                currentEntries = [];
+            }
+        };
+
         for (const rawLine of lines) {
             const line = rawLine.trim();
+
+            // Detect Phase heading
+            const phaseMatch = line.match(phaseHeading);
+            if (phaseMatch) {
+                flushGroup();
+                currentTopic = normalizeText(phaseMatch[1].replace(rangeSuffix, '')) || 'Practice Questions';
+                previousNumbered = false;
+                schema = undefined;
+                continue;
+            }
+
             const separator = line.includes('\t') ? '\t' : line.startsWith('|') || schema?.separator === '|' ? '|' : '';
             const cells = separator ? splitCells(line, separator) : [line];
             if (separator === '|' && cells.every(cell => /^:?-{2,}:?$/.test(cell))) continue;
@@ -107,7 +143,7 @@ DSA.PracticePlan = (() => {
 
             const bareLink = linkFromText(name);
             const isNumbered = !tableRow && numberedPrefix.test(line);
-            const previous = entries[entries.length - 1];
+            const previous = currentEntries[currentEntries.length - 1];
             if (previous && previousNumbered && !isNumbered && !tableRow && !bulletPrefix.test(line)) {
                 if (bareLink && !previous.platformLink) {
                     previous.platformLink = bareLink;
@@ -143,10 +179,11 @@ DSA.PracticePlan = (() => {
             const difficultyCell = columns?.difficultyColumn >= 0 ? cells[columns.difficultyColumn] :
                 candidates.slice(1).find(cell => /^(easy|medium|hard)$/i.test(cell));
             const difficulty = /^(easy|medium|hard)$/i.test(difficultyCell || '') ? difficultyCell.toLowerCase() : '';
-            entries.push({ name, platformLink, difficulty: difficulty ? difficulty[0].toUpperCase() + difficulty.slice(1) : 'Medium' });
+            currentEntries.push({ name, platformLink, difficulty: difficulty ? difficulty[0].toUpperCase() + difficulty.slice(1) : 'Medium' });
             previousNumbered = isNumbered;
         }
-        return { topic, entries };
+        flushGroup();
+        return groups.length ? groups : [{ topic: currentTopic, entries: [] }];
     }
 
     function captureLinks(event) {
@@ -207,25 +244,28 @@ DSA.PracticePlan = (() => {
                 copiedHeadings.clear();
             }
             if (!preview) return;
-            const { entries } = parse(input.value, copiedLinks, copiedHeadings);
-            const total = entries.length;
+            const groups = parse(input.value, copiedLinks, copiedHeadings);
+            const total = groups.reduce((sum, group) => sum + group.entries.length, 0);
             if (!input.value.trim()) preview.textContent = '';
             else if (!total) preview.textContent = 'No questions found yet.';
             else if (total > maxQuestions) preview.textContent = `Found ${total} questions. Paste up to ${maxQuestions} at a time.`;
             else {
-                const linked = entries.filter(entry => entry.platformLink).length;
-                preview.textContent = `${total} ${total === 1 ? 'question' : 'questions'} detected${linked ? ` · ${linked} with links` : ''}`;
+                const linked = groups.reduce((sum, group) => sum + group.entries.filter(entry => entry.platformLink).length, 0);
+                const topics = groups.filter(group => group.entries.length).length;
+                preview.textContent = `${total} ${total === 1 ? 'question' : 'questions'} detected${topics > 1 ? ` across ${topics} topics` : ''}${linked ? ` · ${linked} with links` : ''}`;
             }
         });
         document.getElementById('practice-form').addEventListener('submit', event => {
             event.preventDefault();
-            const { topic, entries } = parse(input.value, copiedLinks, copiedHeadings);
-            if (!entries.length || entries.length > maxQuestions) {
+            const groups = parse(input.value, copiedLinks, copiedHeadings);
+            const total = groups.reduce((sum, group) => sum + group.entries.length, 0);
+            if (!total || total > maxQuestions) {
                 message.textContent = `Paste between 1 and ${maxQuestions} questions, one per line.`;
                 return;
             }
             try {
-                selectPlan(DSA.Store.addPracticeQuestions(topic, entries, dailyLimit));
+                const planIds = DSA.Store.addPracticeQuestions(groups, dailyLimit);
+                selectPlan(planIds[planIds.length - 1]);
             } catch (error) {
                 message.textContent = error.message;
                 return;
@@ -235,7 +275,8 @@ DSA.PracticePlan = (() => {
             copiedHeadings.clear();
             if (preview) preview.textContent = '';
             chosenFilter = '';
-            message.textContent = `Added ${entries.length} ${entries.length === 1 ? 'question' : 'questions'} over ${Math.ceil(entries.length / dailyLimit)} ${entries.length <= dailyLimit ? 'day' : 'days'}.`;
+            const topicCount = groups.filter(group => group.entries.length).length;
+            message.textContent = `Added ${total} ${total === 1 ? 'question' : 'questions'}${topicCount > 1 ? ` across ${topicCount} topics` : ''} over ${Math.ceil(total / dailyLimit)} ${total <= dailyLimit ? 'day' : 'days'}.`;
             DSA.App.refreshPracticeData();
             render();
             if (compact.matches) {

@@ -1491,11 +1491,11 @@ DSA.App = (() => {
     }
 
     function applyTheme(theme) {
-        if (theme === 'obsidian') theme = 'purple';
-        if (!['dark', 'purple', 'green', 'sky'].includes(theme)) theme = 'purple';
+        if (theme === 'obsidian' || theme === 'purple') theme = 'green';
+        if (!['dark', 'green', 'sky'].includes(theme)) theme = 'green';
         document.body.classList.add('theme-transition');
         document.documentElement.setAttribute('data-theme', theme);
-        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#151524' : '#f6f7fb';
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#151524' : '#f3faf6';
         try { localStorage.setItem('dsa_theme', theme); } catch { /* Theme still applies to this page. */ }
 
         // Update toggle button
@@ -1507,7 +1507,7 @@ DSA.App = (() => {
                 label.textContent = 'Dark';
             } else {
                 icon.textContent = '☀';
-                label.textContent = theme === 'green' ? 'Green' : theme === 'sky' ? 'Sky' : 'Purple';
+                label.textContent = theme === 'green' ? 'Green' : 'Sky';
             }
         }
 
@@ -1524,7 +1524,7 @@ DSA.App = (() => {
         // Top bar toggle (cycles between themes)
         document.getElementById('theme-toggle-btn').addEventListener('click', () => {
             const current = document.documentElement.dataset.theme;
-            const next = current === 'dark' ? 'purple' : 'dark';
+            const next = current === 'dark' ? 'green' : current === 'green' ? 'sky' : 'dark';
             applyTheme(next);
 
             // Re-render charts if on analytics
