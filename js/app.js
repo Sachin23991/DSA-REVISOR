@@ -1491,7 +1491,8 @@ DSA.App = (() => {
     }
 
     function applyTheme(theme) {
-        theme = theme === 'dark' ? 'dark' : 'obsidian';
+        if (theme === 'obsidian') theme = 'purple';
+        if (!['dark', 'purple', 'green', 'sky'].includes(theme)) theme = 'purple';
         document.body.classList.add('theme-transition');
         document.documentElement.setAttribute('data-theme', theme);
         document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#151524' : '#f6f7fb';
@@ -1506,7 +1507,7 @@ DSA.App = (() => {
                 label.textContent = 'Dark';
             } else {
                 icon.textContent = '☀';
-                label.textContent = 'Light';
+                label.textContent = theme === 'green' ? 'Green' : theme === 'sky' ? 'Sky' : 'Purple';
             }
         }
 
@@ -1523,7 +1524,7 @@ DSA.App = (() => {
         // Top bar toggle (cycles between themes)
         document.getElementById('theme-toggle-btn').addEventListener('click', () => {
             const current = document.documentElement.dataset.theme;
-            const next = current === 'dark' ? 'obsidian' : 'dark';
+            const next = current === 'dark' ? 'purple' : 'dark';
             applyTheme(next);
 
             // Re-render charts if on analytics
