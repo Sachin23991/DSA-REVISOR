@@ -435,13 +435,13 @@
         box-shadow: 0 6px 0 oklch(50% 0.015 250), 0 12px 0 oklch(48% 0.015 250);
     }
 
-    /* Obsidian theme swatch */
-    .theme-preview-obsidian {
+    /* Purple theme swatch */
+    .theme-preview-purple {
         background: oklch(100% 0 0);
         box-shadow: inset 3px 3px 0 oklch(97% 0 0),
                     inset -3px -3px 0 oklch(93% 0 0);
     }
-    .theme-preview-obsidian::before {
+    .theme-preview-purple::before {
         content: '';
         position: absolute;
         top: 6px; left: 6px;
@@ -449,7 +449,7 @@
         background: oklch(65% 0.15 145);
         border-radius: 3px;
     }
-    .theme-preview-obsidian::after {
+    .theme-preview-purple::after {
         content: '';
         position: absolute;
         top: 18px; left: 6px;
@@ -457,6 +457,48 @@
         background: oklch(70% 0 0);
         border-radius: 2px;
         box-shadow: 0 6px 0 oklch(65% 0 0), 0 12px 0 oklch(60% 0 0);
+    }
+
+    .theme-preview-green {
+        background: #f5fcf8;
+        box-shadow: inset 3px 3px 0 #e7f7ed,
+                    inset -3px -3px 0 #d9f0e2;
+    }
+
+    .theme-preview-green::before,
+    .theme-preview-sky::before {
+        content: '';
+        position: absolute;
+        top: 6px; left: 6px;
+        width: 28px; height: 6px;
+        border-radius: 3px;
+    }
+
+    .theme-preview-green::before { background: #2f9d68; }
+    .theme-preview-green::after,
+    .theme-preview-sky::after {
+        content: '';
+        position: absolute;
+        top: 18px; left: 6px;
+        width: 18px; height: 4px;
+        border-radius: 2px;
+    }
+
+    .theme-preview-green::after {
+        background: #8bcfa9;
+        box-shadow: 0 6px 0 #a8dfbd, 0 12px 0 #bee9cc;
+    }
+
+    .theme-preview-sky {
+        background: #f3faff;
+        box-shadow: inset 3px 3px 0 #e4f3fc,
+                    inset -3px -3px 0 #d7ecf8;
+    }
+
+    .theme-preview-sky::before { background: #318dcc; }
+    .theme-preview-sky::after {
+        background: #8dc4e8;
+        box-shadow: 0 6px 0 #a8d4ef, 0 12px 0 #c0e1f3;
     }
 
     .theme-option-name {
