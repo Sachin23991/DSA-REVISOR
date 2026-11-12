@@ -265,7 +265,7 @@ DSA.PracticePlan = (() => {
             }
             try {
                 const planIds = DSA.Store.addPracticeQuestions(groups, dailyLimit);
-                selectPlan(planIds[planIds.length - 1]);
+                selectPlan(planIds[0]);
             } catch (error) {
                 message.textContent = error.message;
                 return;
@@ -413,7 +413,7 @@ DSA.PracticePlan = (() => {
         const copy = element('div', '', 'practice-item-copy');
         copy.append(element('h4', question.name, 'practice-item-title'));
         const meta = element('div', '', 'practice-meta');
-        if (queue) meta.append(element('span', question.subject));
+        if (queue || question.practiceTopic) meta.append(element('span', question.practiceTopic || question.subject));
         const statusClass = state.group === 'overdue' ? ' practice-status-overdue' : state.action ? ' practice-status-due' : '';
         meta.append(element('span', state.label, `practice-status${statusClass}`));
         if (state.date && state.date !== today) {
@@ -504,7 +504,11 @@ DSA.PracticePlan = (() => {
         const list = document.getElementById('practice-list');
         const summary = document.getElementById('practice-summary');
         const options = Array.from(plans).reverse();
-        selector.replaceChildren(...options.map(([id, questions]) => new Option(questions[0].practiceTopic || questions[0].subject, id)));
+        selector.replaceChildren(...options.map(([id, questions]) => {
+            const topics = [...new Set(questions.map(q => q.practiceTopic || q.subject))];
+            const label = topics.length > 1 ? `${topics[0]} +${topics.length - 1} more` : (topics[0] || 'Practice Plan');
+            return new Option(label, id);
+        }));
         selector.disabled = !options.length;
         if (!plans.has(selectedPlan)) selectedPlan = options[0]?.[0] || '';
         selector.value = selectedPlan;
@@ -529,7 +533,7 @@ DSA.PracticePlan = (() => {
             summary.append(stat);
         }
         filter.disabled = false;
-        filter.value = chosenFilter || (due ? 'due' : 'all');
+        filter.value = chosenFilter || 'all';
         const filtered = records.filter(({ question, state }) => {
             switch (filter.value) {
                 case 'due': return Boolean(state.action);

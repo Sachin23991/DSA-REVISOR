@@ -199,12 +199,14 @@ DSA.Store = (() => {
         const planIds = [];
         let globalIndex = 0;
 
+        // Create a single plan for all groups so all questions appear together
+        const planId = generateId();
+        planIds.push(planId);
+
         for (const group of groups) {
             const topic = group.topic || 'Practice Questions';
             const entries = group.entries || [];
             if (!entries.length) continue;
-            const planId = generateId();
-            planIds.push(planId);
             const added = entries.map((entry, index) => initializeQuestion({
                 name: entry.name,
                 subject: topic,
