@@ -422,7 +422,7 @@
         position: absolute;
         top: 6px; left: 6px;
         width: 28px; height: 6px;
-        background: oklch(65% 0.15 145);
+        background: #5944cd;
         border-radius: 3px;
     }
     .theme-preview-dark::after {
@@ -446,7 +446,7 @@
         position: absolute;
         top: 6px; left: 6px;
         width: 28px; height: 6px;
-        background: oklch(65% 0.15 145);
+        background: #5944cd;
         border-radius: 3px;
     }
     .theme-preview-purple::after {
